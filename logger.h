@@ -19,13 +19,11 @@ enjoy ;)
 class Clog
 {
 public:
-	Clog(); 
-	
+	Clog(Cini *inix,Cfns *fnsx); 
 	void logg(char *ip,char *module, char *data, char *username);
-
 	~Clog();
 protected:
 	void write_to_log(char *data);
-	Cini ini;
-	Cfns fns;
+	Cini *ini;
+	Cfns *fns;
 };

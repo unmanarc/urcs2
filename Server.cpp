@@ -44,7 +44,7 @@ SOCKET CUserver::s_accept(char *ip)
 	BOOL s=FALSE;
 	m=accept(d, (struct sockaddr *) &cliAddr, &cliLen);
 	if (m>0)
-		strcpy(ip,inet_ntoa(cliAddr.sin_addr));
+		strncpy(ip,inet_ntoa(cliAddr.sin_addr),17);
 	else
 		strcpy(ip,"000.000.000.000");
 	return m;
@@ -55,39 +55,26 @@ int CUserver::startserver(unsigned int port)
 {
 	//Commencing any service on static port...
 	//Review the port
-	if (port<1 && port>65535)
-	{
-		return 0; // Port out of range
-	}
-
 	int ServerSize=sizeof(sockaddr_in);
 	struct sockaddr_in servAddr;
-	
-	WORD wVersionRequested;
-	WSADATA	wsaData;
 
-	// ------------------------- Establecer variables
-	
-	wVersionRequested = MAKEWORD( 1,1);
-	if (WSAStartup(wVersionRequested, &wsaData)!=0) 
-	{
-		return -1; // Cannot start sockets
-	}
-
-	d=socket(AF_INET, SOCK_STREAM, 0);
-	if (d==INVALID_SOCKET)
-		return -2;
-
+	if (port<1 && port>65535) return 0; // Port out of range
+	if ((d=socket(AF_INET, SOCK_STREAM, 0))==INVALID_SOCKET) return -2; //Cannot start sockets
 
 	//protocol
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servAddr.sin_port = htons(port);
 
-	//bind port
-	if(bind(d, (struct sockaddr *) &servAddr, sizeof(servAddr))<0)
-		return -3; //error! can't bind port
-
-	listen(d,5);
+	if(bind(d, (struct sockaddr *) &servAddr, sizeof(servAddr))<0)	return -3; //error! can't bind port
+	if (listen(d,5)==SOCKET_ERROR) return -3;
+	return 1;
+}
+int CUserver::start_winsock()
+{
+	WORD wVersionRequested;
+	WSADATA	wsaData;
+	wVersionRequested = MAKEWORD( 1,1);
+	if (WSAStartup(wVersionRequested, &wsaData)!=0) return -1; // Cannot start sockets
 	return 1;
 }

@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="7.10"
 	Name="urcs"
 	ProjectGUID="{CEDCA1AD-89E5-4C17-8D0E-30759F21D3A4}"
 	Keyword="Win32Proj">
@@ -31,7 +31,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib"
+				AdditionalDependencies="ws2_32.lib Urlmon.lib"
 				OutputFile="$(OutDir)/urcs.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
@@ -51,7 +51,13 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -76,7 +82,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib"
+				AdditionalDependencies="ws2_32.lib Urlmon.lib"
 				OutputFile="$(OutDir)/urcs.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
@@ -97,18 +103,26 @@
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
 				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
-				RelativePath="MD5Checksum.cpp">
+				RelativePath="base64.cpp">
 			</File>
 			<File
-				RelativePath="Server.cpp">
+				RelativePath=".\bouncing.cpp">
 			</File>
 			<File
 				RelativePath="compiler.cpp">
@@ -118,21 +132,6 @@
 			</File>
 			<File
 				RelativePath="core_s.cpp">
-			</File>
-			<File
-				RelativePath="executer.cpp">
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCLCompilerTool"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCLCompilerTool"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="file_transfer.cpp">
@@ -150,6 +149,9 @@
 				RelativePath="logger.cpp">
 			</File>
 			<File
+				RelativePath="MD5Checksum.cpp">
+			</File>
+			<File
 				RelativePath="mem_man.cpp">
 			</File>
 			<File
@@ -159,7 +161,16 @@
 				RelativePath="proxy.cpp">
 			</File>
 			<File
+				RelativePath=".\registry.cpp">
+			</File>
+			<File
 				RelativePath="scripting.cpp">
+			</File>
+			<File
+				RelativePath="Server.cpp">
+			</File>
+			<File
+				RelativePath=".\servers.cpp">
 			</File>
 			<File
 				RelativePath="stdafx.cpp">
@@ -184,16 +195,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
-				RelativePath="MD5Checksum.h">
+				RelativePath="base64.h">
 			</File>
 			<File
-				RelativePath="MD5ChecksumDefines.h">
-			</File>
-			<File
-				RelativePath="Resource.h">
-			</File>
-			<File
-				RelativePath="Server.h">
+				RelativePath=".\bouncing.h">
 			</File>
 			<File
 				RelativePath="compiler.h">
@@ -203,21 +208,6 @@
 			</File>
 			<File
 				RelativePath="core_s.h">
-			</File>
-			<File
-				RelativePath="executer.h">
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCustomBuildTool"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="TRUE">
-					<Tool
-						Name="VCCustomBuildTool"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="file_transfer.h">
@@ -235,6 +225,12 @@
 				RelativePath="logger.h">
 			</File>
 			<File
+				RelativePath="MD5Checksum.h">
+			</File>
+			<File
+				RelativePath="MD5ChecksumDefines.h">
+			</File>
+			<File
 				RelativePath="mem_man.h">
 			</File>
 			<File
@@ -244,7 +240,19 @@
 				RelativePath="proxy.h">
 			</File>
 			<File
+				RelativePath=".\registry.h">
+			</File>
+			<File
+				RelativePath="Resource.h">
+			</File>
+			<File
 				RelativePath="scripting.h">
+			</File>
+			<File
+				RelativePath="Server.h">
+			</File>
+			<File
+				RelativePath=".\servers.h">
 			</File>
 			<File
 				RelativePath="stdafx.h">

@@ -17,3 +17,15 @@ enjoy ;)
 
 // TODO: reference any additional headers you need in STDAFX.H
 // and not in this file
+int recv2(SOCKET s,char *buf,int len, int flags)
+{
+	int bytesRecv = SOCKET_ERROR,totalRecv = 0;
+	while( bytesRecv == SOCKET_ERROR || totalRecv<len) 
+	{
+		bytesRecv = recv( s, buf+totalRecv, len-totalRecv, flags );
+		if ( bytesRecv == 0 || bytesRecv == WSAECONNRESET || bytesRecv==0xFFFFFFFF ) // Conexion Cerrada.
+			return -1; 
+		if ( bytesRecv != SOCKET_ERROR) totalRecv+= bytesRecv;
+	}
+	return len;
+}

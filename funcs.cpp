@@ -191,8 +191,6 @@ int Cfns::charhextoint(char *dsi)
 
 int Cfns::find32(char *strfnd, int pos32)
 {
-	//ejemplo:string hola 
-	//pos32=1
 	int mow=0;
 	int i=0;
 	int n=(int)strlen(strfnd);
@@ -204,25 +202,26 @@ int Cfns::find32(char *strfnd, int pos32)
 	}
 	return mow;
 }
-void Cfns::filterstring(char *strfil)
+int Cfns::filterstring(char *strfil)
 {
 	//Modify the data to be redeable by interpreter...
 
 	//First, reduce 32 characters at commencing...
-	while (strfil[0]==32)
+	while (strfil[0]==32 && strfil[0]!=0)
 		strcpy(strfil,strfil+1);
 	//upstring the first word...
 	int r=0;
 	int t=(int)strlen(strfil);
 	while(r<t && strfil[r]!=32 && r<COMMAND_LINE) //replace first word to upstring
 	{
-		char mox[1];
+		char mox[2];
+		mox[1]=0;
 		mox[0]=strfil[r];
 		strupr(mox);
 		strfil[r]=mox[0];
         r++;		
 	}
-
+	return 0;
 }
 void Cfns::chrcat(char *strc, char add)
 {
@@ -254,19 +253,13 @@ void Cfns::denter2(char *crecpt)
 		}
 	}
 }
-
-void Cfns::dep32(char *depu)
+void Cfns::dep32(char *depu,size_t depusize)
 {
 	char outstr[512]="";
-	int mos=(int)strlen(depu);
-	int i=0;
-	int u=0;
-	char m=0;
-	while (i<mos)
+	size_t mos=strlen(depu),i=0,u=0,m=0;
+	while (i<mos && u<sizeof(outstr))
 	{
-		if (m==32 && depu[i]==32)
-		{
-		}
+		if (m==32 && depu[i]==32){ } //Do nothing.
 		else
 		{
 			outstr[u]=depu[i];
@@ -276,15 +269,15 @@ void Cfns::dep32(char *depu)
 		i++;
 	}
 	outstr[u]=0;
-	strcpy(depu,outstr);
+	strncpy(depu,outstr,depusize);
 }
-void Cfns::renter(char *crecpt)
+void Cfns::renter(char *crecpt,size_t sd)
 {
 	char ncrec[512];
 	memset(ncrec,0,512);
 	int ste=(int)strlen(crecpt);
 	int u=0;
-	for (int i=0; i<ste;i++)
+	for (int i=0;i<ste && u<sizeof(ncrec) ;i++)
 	{
         ncrec[u]=crecpt[i];
 		if (crecpt[i]=='\n')
@@ -294,7 +287,7 @@ void Cfns::renter(char *crecpt)
 		}
 		u++;
 	}
-	strcpy(crecpt,ncrec);
+	strncpy(crecpt,ncrec,sd);
 }
 char *Cfns::deparg(char *depu, char *arg, BOOL nax)
 {
@@ -332,12 +325,12 @@ char *Cfns::deparg(char *depu, char *arg, BOOL nax)
 	mw=(int)strlen(res);
 	//now res contain an argument... will now dep original string
 	//depuring res:
-	strncpy(res,res+strlen(arg)+1,COMMAND_LINE);
+	strncpy(res,res+strlen(arg)+1,sizeof(res));
 	//depuring depu:
-	strncpy(newln,depu,COMMAND_LINE);
+	strncpy(newln,depu,sizeof(newln));
 	newln[result]=0;
-	strcat(newln,depu+result+mw+1);
-	strcpy(depu,newln);
+	strncat(newln,depu+result+mw+1,sizeof(newln)-strlen(newln));
+	strncpy(depu,newln,sizeof(depu));
 	strncpy(returned,res,COMMAND_LINE);
 	return returned;
 }
@@ -444,7 +437,7 @@ char *Cfns::convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon)
 				int u=o+(int)strlen(buff);
 				if (u<COMMAND_LINE)
 				{
-					strcat(regret,buff);
+					strncat(regret,buff,sizeof(regret)-strlen(regret));
 					o=u;
 				}
 			}
@@ -468,7 +461,7 @@ char *Cfns::convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon)
 				int u=o+(int)strlen(mx[xlogon].c_User);
 				if (u<COMMAND_LINE)
 				{
-					strcat(regret,mx[xlogon].c_User);
+					strncat(regret,mx[xlogon].c_User,sizeof(regret)-strlen(regret));
 					o=u;
 				}
 			}
@@ -507,6 +500,71 @@ char *Cfns::depstring(char *dep)
 	}
 	return (dep);
 }
+bool Cfns::getboolarg(char *commandline, char *arg)
+{
+	//Search for argument.
+	char strtsrch[16];
+	strcpy(strtsrch," -");
+	strncat(strtsrch,arg,13);
+	size_t b=strlen(strtsrch);
+	char *pdest = strstr(commandline,strtsrch);
+	if (pdest==NULL) return false;
+	else
+	{
+		//extract string from commandline. and return true
+        memset(&returned,0,COMMAND_LINE);
+		int a=0;
+		a=(int)(pdest-commandline);
+		if (commandline[a+b]!=' ' && commandline[a+b]!=0)
+			return false;
+		
+        strncpy(returned,commandline,a);
+		strncat(returned,commandline+a+b,sizeof(returned)-strlen(returned));
+		strncpy(commandline,returned,strlen(commandline));
+		return true;
+	}
+}
+void Cfns::getzeroarg(char *commandline)
+{
+	size_t g=0;
+	//buscar la posicion del primer /32
+	while (g<strlen(commandline) && commandline[g]!=32)	g++;
+	if (g==strlen(commandline)) strcpy(commandline,"");
+	else strncpy(commandline,commandline+g+1,strlen(commandline));
+}
+
+char *Cfns::getchararg(char *commandline, char *arg)
+{
+	//Search for argument.
+	char strtsrch[256];
+	strcpy(strtsrch," -");
+	strncat(strtsrch,arg,253);
+	size_t b=strlen(strtsrch);
+	char *pdest = strstr(commandline,strtsrch);
+	if (pdest==NULL) 
+		return "";
+	else
+	{
+		//extract string from commandline. and return true
+        memset(&returned,0,COMMAND_LINE);
+		int a=0;
+		a=(int)(pdest-commandline);
+		if (commandline[a+b]!=' ')
+			return "";
+		static char displacement[COMMAND_LINE];
+		strncpy(displacement,commandline+a+b+1,COMMAND_LINE);
+		for (size_t g=0;g<COMMAND_LINE && g<strlen(displacement);g++)
+		{
+			if(displacement[g]==32)
+				displacement[g]=0;
+		}
+        strncpy(returned,commandline,a);
+		strcat(returned,commandline+a+b+strlen(displacement)+1);
+		strncpy(commandline,returned,strlen(commandline));
+		return displacement;
+	}
+	return "";
+}
 
 BOOL Cfns::cmpfirstword(char *WordVariable,char *WordStatic)
 {
@@ -526,6 +584,22 @@ BOOL Cfns::cmpfirstword(char *WordVariable,char *WordStatic)
 		rsp=FALSE;
 
 	return rsp;
+}
+
+
+char *Cfns::firstword(char *WordVariable)
+{
+    static char meta[COMMAND_LINE];
+	BOOL rsp=FALSE;
+	int r=0;
+	int t=(int)strlen(WordVariable);
+	memset(&meta,0,COMMAND_LINE);
+	while(r<t && WordVariable[r]!=32 && r<COMMAND_LINE && WordVariable[r]!=13 && WordVariable[r]!=10)
+	{
+		meta[r]=WordVariable[r];
+        r++;
+	}
+	return meta;
 }
 
 

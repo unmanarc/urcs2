@@ -36,13 +36,13 @@ int Ctransf::uploadto(char *host, char *localfile, char *remotefile)
 	struct sockaddr_in Server_add;
 	struct hostent *hentry;
 
-	WORD wVersionRequested;
-	WSADATA wsaData;
+//	WORD wVersionRequested;
+//	WSADATA wsaData;
 
 	// Start Winsock
-	wVersionRequested = MAKEWORD( 1, 0 );
-	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
-	{
+//	wVersionRequested = MAKEWORD( 1, 0 );
+//	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
+//	{
 		// Make Socket
 		SOCKET Sock = socket( AF_INET, SOCK_STREAM, 0 );
 		if ((hentry = gethostbyname(host)) == NULL)	return -4;
@@ -81,7 +81,7 @@ int Ctransf::uploadto(char *host, char *localfile, char *remotefile)
 			else return -2;
 		//Connection Closed:
 		}
-	}
+//	}
 	return -3;
 }
 
@@ -90,13 +90,13 @@ int Ctransf::downloadfrom(char *host,char *remotefile,char *localfile)
 	struct sockaddr_in Server_add;
 	struct hostent *hentry;
 
-	WORD wVersionRequested;
-	WSADATA wsaData;
+	//WORD wVersionRequested;
+	//WSADATA wsaData;
 
 	// Start Winsock
-	wVersionRequested = MAKEWORD( 1, 0 );
-	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
-	{
+//	wVersionRequested = MAKEWORD( 1, 0 );
+//	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
+//	{
 		// Make Socket
 		SOCKET Sock = socket( AF_INET, SOCK_STREAM, 0 );
 		if ((hentry = gethostbyname(host)) == NULL)	return -4;
@@ -117,7 +117,7 @@ int Ctransf::downloadfrom(char *host,char *remotefile,char *localfile)
 
 				send(Sock,"get",30,0);
 				send(Sock,rmf,512,0);
-				recv(Sock,integ,5,0);
+				recv2(Sock,integ,5,0);
 
 				if (!strcmp(integ,"+"))
 				{
@@ -131,7 +131,7 @@ int Ctransf::downloadfrom(char *host,char *remotefile,char *localfile)
 						char byt[4096];
 						do
 						{
-							iRead = recv(Sock,byt,4096,0);
+							iRead = recv2(Sock,byt,4096,0);
 							_write(fh,&byt,iRead);
 						}
 						while (iRead > 0);
@@ -144,6 +144,6 @@ int Ctransf::downloadfrom(char *host,char *remotefile,char *localfile)
 			else return -2;
 		//Connection Closed:
 		}
-	}
+	//}
 	return -3;
 }

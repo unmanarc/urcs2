@@ -58,23 +58,8 @@ int CUclient::start_client()
 	//Do first negot... sending client data.
 	char buff[4096]; //buffer managment
 	int i; //error managment
-
 	memset(&buff,0,4096); //start buff
-
 	i=send(a,"iux",3,0); //Send initialization command.
-
-	if (i<=0) return -1; //if socket error, return -1 (socket error)
-	i=recv(a,buff,32,0); //receive 32bytes data of key.
-	
-	if(i!=32) return -2; //if not receive 32 bytes of protocol, return error -2 (incompatible protocol or socket error)
-	else strncpy(key,buff,32); //if well, set 128bit key
-
-	if (!strcmp(key,"00000000000000000000000000000000")) crypted=0;//no enc.
-	else 
-	{
-		if (!strcmp(key,"--------------------------------")) return -3; //Server full
-		else crypted=1; //yes, is crypted.
-	}
 	return 1; //socket started-.
 }
 
@@ -84,6 +69,8 @@ int CUclient::senddata(char *data)
 	char bftsnd[4096]; //buffer to send
 	if ( dlenght>4092 ) return -1;		//data is too large...
 	memcpy(&bftsnd,&dlenght,4);
+	//progressive encode of data.
+	for (int g=0;g<dlenght;g++) data[g]=255-data[g];
 	strcpy(bftsnd+4,data);
 	int tr=send(a,bftsnd,dlenght+4,0);
     return tr;
@@ -167,6 +154,7 @@ int CUclient::receive(char *data)
 	else
 	{
 		int b=GetBlock(data, header); //Get block that contains the data
+		for (int g=0;g<header;g++) data[g]=255-data[g];
 		if (b<0) return -1; //if an error ocurrs return error
 		else 
 		{

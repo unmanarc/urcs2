@@ -23,9 +23,23 @@ enjoy ;)
 #define SERVER_CONNECTIONS 256
 #define FILE_SLOTS 256
 #define COMMAND_LINE 4092
+#define MAX_MODULES 128
 
 #define HASH_DEFAULT ""
-#define BANNER "URCS - Unmanarc Remote Control Server - 1.0.7 Trinity Glow"
+#define BANNER "URCS - Unmanarc Remote Control Server - 2.13 - Platinium"
+#define INSTALL_URCS_01 "Welcome to URCS setup program"
+#define INSTALL_URCS_02 "Welcome to URCS Global Config"
+#define INSTALL_URCS_03 "Welcome to URCS Install Setup"
+#define INSTALL_URCS_04 "Welcome to URCS Install Setup"
+#define INSTALL_URCS_05 "Welcome to URCS Proxy install"
+#define INSTALL_URCS_06 "Installing URCS, please wait."
+
+
+#define SHELLBANNER1 "    /\\                                    Unmanarc Remote Control Server - URCS"
+#define SHELLBANNER2 "  / | \\                                                        2.13 - Platinium"
+#define SHELLBANNER3 "/   |  \\                                              http://urcs.unmanarc.com/"
+#define SHELLBANNER4 "---------                                 -------------------------------------"
+
 
 //MACROS para texcolor, textbackground, etc.
 #define BLACK		 0	//NEGRO
@@ -58,6 +72,8 @@ enjoy ;)
 
 #include "winsock2.h"
 #include "mem_man.h"
+
+int recv2(SOCKET s,char *buf,int len, int flags);
 
 // TODO: reference additional headers your program requires here
 typedef struct vcpu
@@ -102,24 +118,15 @@ typedef struct conections
 	char from[255]; 
 	char c_User[512];
 	char c_Pass[512];
+	char title[512];
 	FILE *files[FILE_SLOTS];
 	Cmm m_mem;
 	virtual_cpu cpu;
-	
+	bool remote;
+
 	time_t since;
 	SOCKET socket;
 
 }con_v;
-
-typedef struct
-{
-	BOOL busy;
-	BOOL cbsy;
-	char ip[17];
-	char nameserver[512];
-	char key[32];
-	SOCKET f;
-
-}ers_svr;
 
 

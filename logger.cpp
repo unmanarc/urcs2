@@ -19,15 +19,15 @@ static char THIS_FILE[]=__FILE__;
 #endif
 
 
-Clog::Clog()
+Clog::Clog(Cini *inix,Cfns *fnsx)
 { //Constructor
-	ini.LoadData();
+	ini=inix;
+	fns=fnsx;
 }
 Clog::~Clog()
 { //Destructor
 
 }
-
 void Clog::logg(char *ip,char *module, char *data, char *username)
 {
 	size_t tot=strlen(ip)+strlen(module)+strlen(username)+strlen(data)+512;
@@ -35,20 +35,18 @@ void Clog::logg(char *ip,char *module, char *data, char *username)
 	time(&now);
 	char *formed;
 	char date[256];
-	strcpy(date,ctime(&now));
-	fns.denter2(date);
+	strncpy(date,ctime(&now),sizeof(date));
+	fns->denter2(date);
 	formed=(char *)malloc(tot);
-	sprintf(formed,"[%s %s:%-12s@%-15s]: %s\n",date,module,username,ip,data);
+	_snprintf(formed,tot,"[%s %s:%-12s@%-15s]: %s\n",date,module,username,ip,data);
 	write_to_log(formed);
 }
-
 void Clog::write_to_log(char *data)
 {
 	char llfile[_MAX_PATH];
-	strcpy(llfile,ini.windir);
-	strcat(llfile,"\\urcs.log");
+	_snprintf(llfile,sizeof(llfile),"%s\\urcs2.log",ini->windir);
     FILE *fp;
-	fp=fopen(llfile,"a+");
+	if ((fp=fopen(llfile,"a+"))==NULL) return;
 	fputs(data,fp);
 	fclose(fp);
 }

@@ -22,6 +22,7 @@ class CUserver
 	*/
 public:
 	CUserver(); 
+	int start_winsock();
 	int startserver(unsigned int port);
 	SOCKET s_accept(char *ip); // Receive any connection and send to background
 	int closeserver();

@@ -13,12 +13,12 @@ void Cconnector::connectto(char *ip,unsigned int port)
 {
 	struct hostent *hentry;
 	struct sockaddr_in Server_add;
-	WORD wVersionRequested;
-	WSADATA wsaData;
+//	WORD wVersionRequested;
+//	WSADATA wsaData;
 	// Start Winsock
-	wVersionRequested = MAKEWORD( 1, 0 );
-	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
-	{
+//	wVersionRequested = MAKEWORD( 1, 0 );
+//	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
+//	{
 
 		SOCKET Sock = socket( AF_INET, SOCK_STREAM, 0 ); //open socket
 		// Connect Server
@@ -44,7 +44,7 @@ void Cconnector::connectto(char *ip,unsigned int port)
 			else
 				return;
 		}
-	}
-	else
-		return;
+//	}
+//	else
+//		return;
 }

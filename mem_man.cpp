@@ -118,7 +118,7 @@ int Cmm::defragmem() //defrag memory and return freemem.
 		if (local_mem.lenght[r]>0) //busy)
 		{
 			//copy it to new struct of data.
-			strcpy(defragmented.name[r],local_mem.name[r]); //copy names
+			strncpy(defragmented.name[r],local_mem.name[r],12); //copy names
 			defragmented.lenght[r]=local_mem.lenght[r]; //lenght of block of mem
 			defragmented.pos[r]=localpos; //setting localpos to actual position
 			//copy memory

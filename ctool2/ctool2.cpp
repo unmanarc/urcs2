@@ -46,7 +46,7 @@ UINT startserver(LPVOID pParam)
 {
 	SOCKET s=ack;
 	int y=1;
-	char command[30];
+	char command[31];
 	int cmd=0;
 
 	//Receive command (int):

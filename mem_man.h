@@ -13,11 +13,12 @@ enjoy ;)
 #pragma once
 #endif // _MSC_VER > 1000
 
+
 #define MEMORY_SLOTS 128 //128 memory slots
 #define MEMORY_FOR_USER 65536 //65Kb of memory for each user
 
 
-typedef struct memory
+typedef struct memory2a
 {
 	char mem[MEMORY_FOR_USER]; //memory
 	char name[MEMORY_SLOTS][12]; //name of this slot
@@ -26,11 +27,12 @@ typedef struct memory
 } mem_of_user;
 
 
+
 class Cmm
 {
 public:
 	Cmm(); 
-	~Cmm();
+	
 	int putmem(char *name, char *data_to_put, int lenght); //put data into mem
 	char *getmem(char *name); //get data from memory
 	
@@ -40,7 +42,7 @@ public:
     
 	int getmemsize(char *name); //get data size from memory
 	int release_mem(); //delete all data in memory
-
+	~Cmm();
 protected:
 	int defragmem(); //defrag memory and return freemem.
 	int getslotfree();
@@ -48,3 +50,4 @@ protected:
 	mem_of_user local_mem;
 	char rtax[MEMORY_FOR_USER];
 };
+

@@ -28,18 +28,26 @@ public:
 	int charhextointa(char dsi); //convert a one byte representing hex code, to int (0-F -> 0-16)
 	int charhextoint(char *dsi); //Convert two bytes in hexcode to int (00-FF -> 000-255)
 	int find32(char *strfnd, int pos32); //find the first (->) /32 /10 /13 or /0 (space, enter, return, null)
-	void filterstring(char *strfil); //remove the double /32 and upperstring.
+	int filterstring(char *strfil); //remove the double /32 and upperstring.
+	
 	void chrcat(char *strc, char add); // cat a byte to char*
 	void denter(char *crecpt); //null-terminate string at first CR/LF
 	void denter2(char *crecpt); //removes CR/LF
-	void dep32(char *depu);//removes the /32 of a seq.
-	void renter(char *crecpt);//ad /13 to /10 expresions
+	void dep32(char *depu,size_t depusize);//removes the /32 of a seq.
+	void renter(char *crecpt,size_t sd);//ad /13 to /10 expresions
 	char *deparg(char *depu, char *arg, BOOL nax); //return the arguments and depure
 	char *convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon);//Transform $ lang.
 	char *convert_vars(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon);//Transform % lang.
 	char *depstring(char *dep);//convert all /32 to /0
 	char *md5sum(char *value); //calculate md5 sum of any string
 	char *extview(char *filename); //retrive extension from file
+	char *firstword(char *WordVariable); //retrive first word of string.
+
+	bool getboolarg(char *commandline, char *arg);
+
+	char *getchararg(char *commandline, char *arg);
+	
+	void getzeroarg(char *commandline);
 
 	BOOL cmpfirstword(char *WordVariable,char *WordStatic); //compare the first word of a string
 	BOOL KillProcess(unsigned long pid); //kill a process

@@ -226,7 +226,7 @@ int Ccompiler::compile(char *script_file, char *file, int pagesize)
 			comando.command_lenght=tmu;
 //			_write(fp,&comando,sizeof(size_t)+sizeof(short)+comando.command_lenght);
 			_write(fp,&comando,sizeof(comando));
-			_write(fp,&proc_line,tmu);
+			_write(fp,&proc_line,(unsigned int)tmu);
 		}
 	}
 	//open temporal file for convertions....

@@ -14,16 +14,16 @@ enjoy ;)
 #endif // _MSC_VER > 1000
 
 #include "winsock2.h"
+#include "ini_man.h"
 
 class Cproxy
 {
 public:
-	Cproxy();
+	Cproxy(Cini *inim);
 	int start_proxy_instance(SOCKET client, SOCKET server);
-	SOCKET connectto();
+	SOCKET connectto(int prx);
 	int attach(char *ip, unsigned int port, SOCKET client);
 	SOCKET connecttoproxy();
-	BOOL pingproxy(SOCKET server);
 	int transfer();
 	~Cproxy();
 
@@ -31,5 +31,6 @@ protected:
 	int GetBlock(void *p, int len,SOCKET m);
 	SOCKET x;
 	SOCKET y;
+	Cini *ini;
 
 };

@@ -16,6 +16,8 @@ enjoy ;)
 #include "intep.h"
 #include <direct.h>
 #include "proxy.h"
+#include "bouncing.h"
+
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -23,48 +25,23 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+static Cservers *proxies;
 
 Ccore::Ccore()
 { //Constructor
-	for (int fnd=0; fnd<SERVER_SLOTS;fnd++) //free server slots
-	{
-		svrs[fnd].busy=FALSE;
-		svrs[fnd].cbsy=FALSE;
-		svrs[fnd].f=0;
-		strcpy(svrs[fnd].ip,"0.0.0.0");
-		strcpy(svrs[fnd].nameserver,"none");
-	}
+	proxies = new Cservers();
+	data_g = new Cini();
+	fnc = new Cfns(); //for use diverse functions.
+	_log = new Clog(data_g,fnc);
 	for (int t=0;t<SERVER_CONNECTIONS;t++) //free connections
 	{
 		cnts[t].busy=0;
 		cnts[t].proxy=0;
 	}
-
 }
 Ccore::~Ccore()
 { //destructor
 	
-}
-
-int Ccore::findpipefree()
-{
-	Cproxy prx;
-	for (int fnd=0; fnd<SERVER_SLOTS;fnd++)
-	{
-		//releasing disconnected proxys
-		if (svrs[fnd].busy && !svrs[fnd].cbsy)
-		{
-			if (!prx.pingproxy(svrs[fnd].f))
-			{ //release
-				svrs[fnd].busy=0;
-				svrs[fnd].cbsy=0;
-				closesocket(svrs[fnd].f);
-			}
-		}
-	}
-	for (int fnd=0; fnd<SERVER_SLOTS;fnd++)
-		if (!svrs[fnd].busy) return fnd;
-	return -1;
 }
 
 int Ccore::findcntfree()
@@ -79,73 +56,184 @@ int Ccore::findcntfree()
 	return -1;
 }
 
-int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
+int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip, int auth)
 {
 	//Commenging a new server
 	SOCKET temp=d;
 	int z=findcntfree(); //inmediatly find for free connection and busy
-	Cproto protocol;
+	Cproto protocol(data_g);
 	if (z>=0) //if we have slots-.
 	{
-		Cfns fnc; //for use diverse functions.
 		cnts[z].busy=1; //inmediatly busy this connection
 		cnts[z].socket=temp; //Assing socket to struct
 		cnts[z].m_mem.release_mem();
 
 		for (int i=0; i<FILE_SLOTS;i++) cnts[z].files[i]=0; //Release file handlers
 
-		strcpy(cnts[z].ip_from,ip); //Assing IP addr from
+		strncpy(cnts[z].ip_from,ip,256); //Assing IP addr from
 		time(&cnts[z].since); //assing time of connection
 		BOOL prx=1; // start proxy as TRUE
 
-   		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Received connection.","none");
+   		if (data_g->log_data) _log->logg(cnts[z].ip_from,"CORE ","Received connection.","none");
 
 		prx=asproxy; //if proxy do more rounds
-		BOOL cntw=FALSE;
-		if (asproxy) 
-			protocol.continue_socket(temp,"00000000000000000000000000000000");
-		else
-			cntw=protocol.start_socket(temp,TRUE);
-		if(cntw || asproxy) // Start connection with client?
+		if(auth==3)
 		{
-			//review if proxy
-			if (asproxy)
+			Cbouncing bnc;
+			if(data_g->allow_upbounce)  //Remote bounce accept.
 			{
-				int rew=-1;
-				while(rew<0) //wait for proxyline
+				if (data_g->log_data) _log->logg(cnts[z].ip_from,"CORE ","URCSBP Protocol Activated","none");
+				bnc.proxy_accept(cnts[z].socket);
+				bnc.proxy_manager(cnts[z].socket);
+				return 0;
+			}
+			else
+			{
+				bnc.proxy_deny(cnts[z].socket);
+				return 0;
+			}
+		}
+
+		if(auth==2 && data_g->allow_uplink) // Remote command excecution
+		{
+			//List modules and load.
+			HINSTANCE hisdz[MAX_MODULES];
+			char bsqz[MAX_PATH+20];
+			strncpy(bsqz,data_g->server_modules_directory,MAX_PATH);
+			strncat(bsqz,"\\urcs*.dll",sizeof(bsqz)-strlen(bsqz));
+		
+			WIN32_FIND_DATA ffdz; 
+			HANDLE shz = FindFirstFile(bsqz, &ffdz);
+			for (int kz=0;kz<MAX_MODULES;kz++) hisdz[kz]=0;
+			kz=0;
+			if(INVALID_HANDLE_VALUE != shz)
+			{
+				do 
 				{
-					rew=protocol.getproxyline();
-					if (rew==-1)
+					char pathfxz[2*MAX_PATH];
+					_snprintf(pathfxz,sizeof(pathfxz),"%s\\%s",data_g->server_modules_directory,ffdz.cFileName);
+					hisdz[kz]=LoadLibrary(pathfxz);
+					if (hisdz[kz]!=NULL) kz++;
+				} while (FindNextFile(shz, &ffdz) && kz!=MAX_MODULES);
+				FindClose(shz);
+			}
+
+			
+			//uplink commands
+			protocol.continue_socket(temp,"00000000000000000000000000000000");
+			strcpy(cnts[z].c_User,"support");
+			char rcmd[4096]="";
+			recv2(temp,rcmd,4096,0);
+			Cintep intep; //make new interpreter
+			intep.start_intep(cnts,z,protocol.getkey(),&protocol,fnc,data_g,_log);
+			if (rcmd[0]=='R') 
+			{
+				_snprintf(cnts[z].cmdline,COMMAND_LINE,"PRX_UPLINK -r %s",rcmd+1);
+				intep.run(cnts,proxies,z,hisdz); //run command line
+			}
+			_snprintf(cnts[z].cmdline,COMMAND_LINE,"%s",rcmd+1);
+			fnc->filterstring(cnts[z].cmdline); //filter string for commands
+			strncpy(cnts[z].cmdline,fnc->convert_vars(cnts[z].cmdline,cnts,z),COMMAND_LINE);
+
+			intep.run(cnts,proxies,z,hisdz); //run command line
+
+			//unload modules.
+			int iz=0;	while (hisdz[iz]!=NULL)		FreeLibrary(hisdz[i++]);
+			return 0;
+		}
+		else if (auth==2) return 0;
+
+		bool cntw=FALSE; // Es validada la conexión?
+		if (asproxy) protocol.continue_socket(temp,"00000000000000000000000000000000"); //Conexión saliente hacia un proxy
+		else cntw=protocol.start_socket(temp,TRUE); //Conexión entrante de un proxy o un cliente
+
+		if (protocol.isProxyIn() && cntw) 
+		{
+			// Es una conexión valida de un proxy entrante.
+			// Se deben enviar Keep-Alives mientras este proxy exista y no este ocupado.
+			///////////////////////////////////////
+			//	     Setup Proxy Operation		 //
+			///////////////////////////////////////
+			int gd=proxies->findpipefree();
+			proxies->setBusy(gd,true);
+			
+			char sname[256];
+			protocol.getServerName(sname,256);
+			proxies->setNameServer(gd,sname);
+			proxies->setprx_logdata(gd,protocol.get_prx_logdata());
+			proxies->setprx_upbounce(gd,protocol.get_prx_upbounce());
+			proxies->setprx_uplink(gd,protocol.get_prx_uplink());
+			proxies->setprx_upuser(gd,protocol.get_prx_upuser());
+
+			proxies->setIp(gd,cnts[z].ip_from);
+			proxies->setSocket(gd,cnts[z].socket);
+			cnts[z].busy=0;
+			char prxn[256];	proxies->getNameServer(gd,prxn,sizeof(prxn));
+			if (data_g->log_data) _log->logg(proxies->lgetIp(gd),"CORE ","Proxy attached.",prxn);
+			///////////////////////////////////////
+			//	       Keep-Alive Operation		 //
+			///////////////////////////////////////
+			while (proxies->isBusy(gd))
+			{
+				if ( !proxies->isClientBusy(gd) )
+				{
+					char ka[80]="PING";
+					proxies->setBlocked(gd,true);
+					proxies->addSentBytes(gd,(unsigned long)send(proxies->getSocket(gd),ka,80,0));
+					proxies->addRecvBytes(gd,(unsigned long)recv2(proxies->getSocket(gd),ka,80,0));
+					proxies->setBlocked(gd,false);
+					if (strcmp(ka,"PONG"))
 					{
-						cnts[z].busy=0;
-						return 0; //if connection are down go out.
+						proxies->freeSlot(gd); //Server Disconnected.
+						if (data_g->log_data) _log->logg(proxies->lgetIp(gd),"CORE ","Proxy detached (No PING responce).",prxn);
 					}
 				}
+				Sleep(35000);	//Ping's the server every 35 seconds.
 			}
-			if (protocol.prx) //is proxy...
-			{
-				int gd=findpipefree(); //find for free proxy...
-				svrs[gd].busy=1;
-				strncpy(svrs[gd].nameserver,protocol.nameserver,512); //assing nameserver
-				strcpy(svrs[gd].ip,cnts[z].ip_from);
-				svrs[gd].f=cnts[z].socket;
-				cnts[z].busy=0;
-				if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Proxy attached.",svrs[gd].nameserver);
-				return -1;
-			}
+			return -1;
+		}
+		else if( protocol.isAuthIn() && cntw )
+		{
+			if (data_g->allow_be_upuser_server)	protocol.start_remote_auth_server();
+			else protocol.start_remote_auth_server_false();
+			return -21;
+		}
+		else if( cntw || asproxy ) // Conexión validada como valida (cliente/proxy entrante) o como proxy saliente.
+		{
 			//Connection started... we can send any data-. (sending banner)
 			protocol.cls();
+
+			protocol.drawRectangle(6,5,70,7,2,LIGHTGRAY,DARKGRAY);
+			protocol.setbackground(DARKGRAY);
 			protocol.setcolor(15);
 			protocol.senddatacenter(BANNER,7);
 			protocol.senddata("\n");
-			protocol.setdefaultcolor();
-			protocol.senddatacenter(data_g.server_banner,8);
-
-			int level; //privilege levels
-			if (data_g.installed) level=0; //privilege level on logon
-			else level=4; //privilege level on instalation
 			
+			if (data_g->log_data)
+			{
+				protocol.setcolor(RED);
+				protocol.senddatacenter("Warning: This server logs your activities",8);
+				protocol.setdefaultcolor();
+				protocol.senddatacenter(data_g->server_banner,9);
+			}
+			else
+			{
+				protocol.setdefaultcolor();
+				protocol.senddatacenter(data_g->server_banner,8);
+			}
+			int level; //privilege levels
+			if (data_g->installed) level=0; //privilege level on logon
+			else level=4; //privilege level on instalation
+
+			protocol.setbackground(0);
+
+
+			char urcslogin[512]="URCS Login";
+			_snprintf(urcslogin,sizeof(urcslogin),"URCS Login @ %s",data_g->server_name);
+			protocol.settitle(urcslogin);
+
 			BOOL cont=1; //continue while not exit
+			char germen[30];
 			while(cont)
 			{
 				if(asproxy)
@@ -154,28 +242,92 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				{
 					//Logged on.
 					Cintep intep; //make new interpreter
-					intep.start_intep(cnts,z,protocol.getkey()); //start interpreter
-					intep.firstinstall(cnts,z); //install program
-					data_g.LoadData(); //load ini again
-					if (data_g.installed) level=0; //privilege level on logon
+					intep.start_intep(cnts,z,protocol.getkey(),&protocol,fnc,data_g,_log); //start interpreter
+					int misc=intep.firstinstall(cnts,z); //install program
+					data_g->LoadData(); //load ini again
+					if (data_g->installed) level=0; //privilege level on logon
+					else if (misc==1) level=3; //Misconfigured shell
+					else if (misc==2) {closesocket(cnts[z].socket); cont=0;} //Bye
 					else level=4; //privilege level on instalation
 				}
 				if (level==3) 
 				{
+					char urcslg[512]="logged on.";
+					if (strlen(cnts[z].c_User)+strlen(data_g->server_name)+strlen(cnts[z].ip_from)+8<512)
+						_snprintf(urcslg,sizeof(urcslg),"%s@%s from: %s",cnts[z].c_User,data_g->server_name,cnts[z].ip_from);
+					protocol.settitle(urcslg);
+					strncpy(cnts[z].title,urcslg,512);
+
 					//Logged on.
-					if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Logged on.",cnts[z].c_User);
+					if (data_g->log_data) _log->logg(cnts[z].ip_from,"CORE ","Logged on.",cnts[z].c_User);
 					protocol.cls();
 					// print banner
                    
+					//protocol.setbackground(DARKGRAY);
 					protocol.setcolor(LIGHTGREEN);
-					protocol.senddata("    /\\                                    Unmanarc Remote Control Server - URCS\n");
-					protocol.senddata("  / | \\                                                    Trinity Glow - 1.0.7\n");
-					protocol.senddata("/   |  \\                                              http://urcs.unmanarc.com/\n");
-					protocol.senddata("---------                                 -------------------------------------\n");
+					protocol.sendline(SHELLBANNER1);
+					protocol.sendline(SHELLBANNER2);
+					protocol.sendline(SHELLBANNER3);
+					protocol.sendline(SHELLBANNER4);
+					protocol.setbackground(0);
 					protocol.setdefaultcolor();
+
+					//Load Libraries/modules here.
+					HINSTANCE hisd[MAX_MODULES];
+
+					//Modules information:
+					
+					//List modules and load.
+					char bsq[MAX_PATH+20];
+					strncpy(bsq,data_g->server_modules_directory,MAX_PATH);
+					strncat(bsq,"\\urcs*.dll",sizeof(bsq)-strlen(bsq));
+					
+					WIN32_FIND_DATA ffd; 
+					HANDLE sh = FindFirstFile(bsq, &ffd);
+					for (int k=0;k<MAX_MODULES;k++) hisd[k]=0;
+					k=0;
+					if(INVALID_HANDLE_VALUE != sh)
+					{
+						protocol.sendline("Loading Modules:");
+						do 
+						{
+							protocol.senddata(ffd.cFileName);
+							char pathfx[2*MAX_PATH];
+							_snprintf(pathfx,sizeof(pathfx),"%s\\%s",data_g->server_modules_directory,ffd.cFileName);
+							hisd[k]=LoadLibrary(pathfx);
+							if (hisd[k]==NULL) protocol.senddata(" - Could not load this module.");
+							else
+							{
+								typedef int (*GTI)(char *info, int xm);
+								typedef int (*GETVERSION)( void );
+								
+								GETVERSION getversion = (GETVERSION)GetProcAddress(hisd[k],"version");
+								GTI gti = (GTI)GetProcAddress(hisd[k],"getmodinfo");
+								if (gti!=NULL && getversion!=NULL)
+								{
+									typedef int (*STINTEP)(con_v mx[SERVER_CONNECTIONS], int local_user, char *newkey);
+									STINTEP sintep = (STINTEP)GetProcAddress(hisd[k],"start_intep");
+									sintep(cnts,z,protocol.getkey());
+
+									char vr[COMMAND_LINE];
+									char info[256];
+									gti(info,256);
+									_snprintf(vr,40," - Version %02d - ",getversion());
+									strncat(vr,info,COMMAND_LINE-40);
+									protocol.senddata(vr);
+								}
+								else protocol.senddata(" - FF - There isn't an URCS Module");
+
+								k++;
+							}
+							protocol.senddata("\n");
+						} while (FindNextFile(sh, &ffd) && k!=MAX_MODULES);
+						FindClose(sh);
+					}
+
 					Cintep intep; //make new interpreter
-					intep.start_intep(cnts,z,protocol.getkey());
-                       // print command line take parameter and process them
+					intep.start_intep(cnts,z,protocol.getkey(),&protocol,fnc,data_g,_log); //start interpreter
+					// print command line take parameter and process them
                     int b=0;
 					while (b>=0)
 					{
@@ -183,33 +335,55 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 						_chdir(cnts[z].localdir); // change to dir of user
 						intep.printprompt(cnts,z); //print prompt
 						b=protocol.getdnline(cnts[z].cmdline,COMMAND_LINE); //get user command line
-						fnc.filterstring(cnts[z].cmdline); //filter string for commands
-						strncpy(cnts[z].cmdline,fnc.convert_vars(cnts[z].cmdline,cnts,z),COMMAND_LINE);
-						if (b>=0) b=intep.run(cnts,svrs,z); //run command line
-						if (!intep.passed) protocol.senddata("\nCommand line error\n"); //when command cannot be excecuted show this
+						int fs=fnc->filterstring(cnts[z].cmdline); //filter string for commands
+						strncpy(cnts[z].cmdline,fnc->convert_vars(cnts[z].cmdline,cnts,z),COMMAND_LINE);
+						if (b>=0)
+						{
+							b=intep.run(cnts,proxies,z,hisd); //run command line
+							if (!intep.passed) protocol.senddata("\nCommand line error\n"); //when command cannot be excecuted show this
+						}
 					}
+					//Liberar las librerias dinamicas:
+					int i=0;
+					while (hisd[i]!=NULL)
+						FreeLibrary(hisd[i++]);
 					if (b==-15) return -15;
 					cont=0;
 				}
 				if (level==2) 
 				{
 					//compare data with database.
-					if (data_g.ValidateUser(cnts[z].c_User,cnts[z].c_Pass)>=0) 
-					{ //Validated with database
+					if ((cnts[z].user_range=data_g->ValidateUser2(cnts[z].c_User,cnts[z].c_Pass,germen))>=0) 
+					{ 
+						//Validated with local database
+						cnts[z].remote=false;
 						protocol.setposxy(1,18);
 						protocol.delline();
-						protocol.setposxy(1,25);
+						protocol.setposxy(1,24);
 						protocol.senddata("logged on.\n");
-						cnts[z].user_range=data_g.ValidateUser(cnts[z].c_User,cnts[z].c_Pass);
                         level++;			
 					}
 					else
 					{
-						protocol.setposxy(1,18);
-						protocol.delline();
-						protocol.setposxy(1,25);
-						protocol.senddata("Bad username or password.");
-						level=0;
+						// Validar usuario en servidor remoto.
+						if (data_g->allow_upusers && (cnts[z].user_range=protocol.start_remote_auth_client(cnts[z].c_User,cnts[z].c_Pass,germen))>=0) 
+						{
+							// Valido con la base de datos remota.
+							cnts[z].remote=true;
+							protocol.setposxy(1,18);
+							protocol.delline();
+							protocol.setposxy(1,24);
+							protocol.senddata("logged on (Remote Auth).\n");
+					        level++;			
+						}
+						else
+						{
+							protocol.setposxy(1,18);
+							protocol.delline();
+							protocol.setposxy(1,24);
+							protocol.senddata("Bad username or password.");
+							level=0;
+						}
 					}
 				}
 				if (level==1) 
@@ -217,13 +391,15 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 					//request for password:
 					protocol.setposxy(1,18);
 					protocol.delline();
-					protocol.setposxy(1,25);
+					protocol.setposxy(1,24);
 					protocol.senddata("password: ");
 					protocol.setcolor(15);
-					if(protocol.getdnpass(cnts[z].c_Pass,512)<0)
+				//	if(protocol.getdnpass(cnts[z].c_Pass,512)<0)
+				//		cont=0;
+					if(protocol.comparehash(cnts[z].c_Pass,germen)<0)
 						cont=0;
 					protocol.setcolor(7);
-					fnc.denter(cnts[z].c_Pass);
+					fnc->denter(cnts[z].c_Pass);
                     level++;
 				}
 				if (level==0) 
@@ -231,12 +407,12 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 					//request for user:
 					protocol.setposxy(1,18);
 					protocol.delline();
-					protocol.setposxy(1,25);
+					protocol.setposxy(1,24);
 					protocol.senddata("username: "); //request
 					protocol.setcolor(15);
 					if(protocol.getdnline(cnts[z].c_User,512)<0) cont=0; //request line
 					protocol.setcolor(7);
-					fnc.denter(cnts[z].c_User); //filter
+					fnc->denter(cnts[z].c_User); //filter
 					if(!strcmp(cnts[z].c_User,"exit")) cont=0; //command for terminate
                     level++;
 				}
@@ -244,7 +420,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 			if(asproxy) 				//end of while... 
 				protocol.sendclose();
 		}
-		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Closed Connection.",cnts[z].c_User);
+		if (data_g->log_data) _log->logg(cnts[z].ip_from,"CORE ","Closed Connection.",cnts[z].c_User);
 		cnts[z].m_mem.release_mem();
 		cnts[z].busy=0;
 	}

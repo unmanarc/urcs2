@@ -14,6 +14,7 @@ enjoy ;)
 #include "cliente.h"
 #include "conio.h"
 #include "Consola.h"
+#include "MD5Checksum.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -65,7 +66,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 		{
             //none args...
 			strcpy(s_ip,"127.0.0.1");
-			strcpy(s_port,"3359");
+			strcpy(s_port,"3360");
 		}
 		else
 		{
@@ -74,7 +75,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			{
 				// for 1 arg (ip)
 				strncpy(s_ip,argv[1],256);
-				strcpy(s_port,"3359");
+				strcpy(s_port,"3360");
 			}
 			else
 			{
@@ -117,6 +118,24 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						getpass(line,512);
 						tm=cln.senddata(line);
 					}
+					if (tm==4100) // mode for request password merged.
+					{
+		                char line[512];
+						char hash[256],germen[128]="";
+
+						memset(&hash,0,256);
+						memset(&germen,0,128);
+						memset(&line,0,512);
+						getpass(line,512);
+						cln.receive(germen);
+						
+						line[strlen(line)-1]=0;
+						sprintf(hash,"%s%s",
+								CMD5Checksum::GetMD5((BYTE*)line,(UINT)strlen(line)),
+                                germen);
+						strcpy(hash,CMD5Checksum::GetMD5((BYTE*)hash,(UINT)strlen(hash)));
+						tm=cln.senddata(hash);
+					}
 					if (tm==5000) //mode for request line
 					{
 						clrscr();
@@ -149,6 +168,11 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						delline();
 					if (tm==5039) //Insertar una nueva línea
 						insline();
+					if (tm==5040) //Set Windows Title
+					{
+						tm=cln.receive(bf);	//Receive title
+                        settitle(bf);
+					}
 					//from 6000 to 8000 is for x,y...
 					if (tm>=6000 && tm<=8000) //poner posición XY
 					{
