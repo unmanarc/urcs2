@@ -91,12 +91,15 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 		cnts[z].busy=1; //inmediatly busy this connection
 		cnts[z].socket=temp; //Assing socket to struct
 		cnts[z].m_mem.release_mem();
+
 		for (int i=0; i<FILE_SLOTS;i++) cnts[z].files[i]=0; //Release file handlers
 
 		strcpy(cnts[z].ip_from,ip); //Assing IP addr from
 		time(&cnts[z].since); //assing time of connection
 		BOOL prx=1; // start proxy as TRUE
-		
+
+   		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Received connection.","none");
+
 		prx=asproxy; //if proxy do more rounds
 		BOOL cntw=FALSE;
 		if (asproxy) 
@@ -127,10 +130,11 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				strcpy(svrs[gd].ip,cnts[z].ip_from);
 				svrs[gd].f=cnts[z].socket;
 				cnts[z].busy=0;
+				if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Proxy attached.","proxy");
 				return -1;
 			}
 			//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.4 - Midnight_2003\n");
+			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.5b1 PILIN\n");
 			protocol.senddata(data_g.server_banner);
 			protocol.senddata("\n");
 			int level; //privilege levels
@@ -155,6 +159,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				if (level==3) 
 				{
 					//Logged on.
+					if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Logged on.",cnts[z].c_User);
 					protocol.cls();
 					Cintep intep; //make new interpreter
 					intep.start_intep(cnts,z,protocol.getkey());
@@ -210,6 +215,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 			if(asproxy) 				//end of while... 
 				protocol.sendclose();
 		}
+		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Closed Connection.",cnts[z].c_User);
 		cnts[z].m_mem.release_mem();
 		cnts[z].busy=0;
 	}

@@ -33,6 +33,7 @@ public:
 	char mother_name[256];
 	int mport;
 	int port;
+	BOOL log_data;
 	BOOL crypted;
 
 	//Datos del sistema:

@@ -126,6 +126,9 @@
 				RelativePath="intep.cpp">
 			</File>
 			<File
+				RelativePath="logger.cpp">
+			</File>
+			<File
 				RelativePath="mem_man.cpp">
 			</File>
 			<File
@@ -185,6 +188,9 @@
 			</File>
 			<File
 				RelativePath="intep.h">
+			</File>
+			<File
+				RelativePath="logger.h">
 			</File>
 			<File
 				RelativePath="mem_man.h">

@@ -15,7 +15,7 @@ enjoy ;)
 
 #include "winsock2.h"
 #include "ini_man.h"
-
+#include "logger.h"
 
 
 class Ccore
@@ -38,7 +38,7 @@ public:
 
 
 protected:
-
+	Clog _log;
 
 	//functions to 
 

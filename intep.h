@@ -19,7 +19,7 @@ enjoy ;)
 #include "ini_man.h"
 #include "funcs.h"
 #include "core_s.h"
-
+#include "logger.h"
 class Cintep
 {
 public:
@@ -87,7 +87,8 @@ protected:
 	void prg_prompt(con_v mx[SERVER_CONNECTIONS], int xlogon); //Change prompt
 	void prg_mkuser(con_v mx[SERVER_CONNECTIONS], int xlogon); //MAke user
 	void prg_rmuser(con_v mx[SERVER_CONNECTIONS], int xlogon); //deletes user
-
+	void prg_log(con_v mx[SERVER_CONNECTIONS], int xlogon); //active/desactive logs
+	
 	void prg_net_send(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	//void prg_net_sendto(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_net_receive(con_v mx[SERVER_CONNECTIONS], int xlogon);
@@ -107,7 +108,7 @@ protected:
 
 
 
-
+	Clog _log;
 	Cproto nproto;
 	Cfns fns;
 	Cini data_g;

@@ -65,6 +65,7 @@ void Cini::LoadData()
 	char lnif[512];
 	char lport[10];
 	char lcrypt[2];
+	char ld[2];
 	OSVERSIONINFO     verInfo = {0};
 	verInfo.dwOSVersionInfoSize = sizeof (verInfo);
 	GetVersionEx(&verInfo);
@@ -116,11 +117,12 @@ void Cini::LoadData()
 	GetPrivateProfileString("URCS","server_port","3359",lport,10,ini_filename);
 	GetPrivateProfileString("URCS","mother_name","proxy.unmanarc.com",mother_name,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
 	GetPrivateProfileString("URCS","mother_port","3359",mother_port,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
-	GetPrivateProfileString("URCS","server_crypted","F",lcrypt,2,ini_filename);
-	if (lcrypt[0]=='Y')
-		crypted=1;
-	else
-		crypted=0;
+	GetPrivateProfileString("URCS","server_crypted","N",lcrypt,2,ini_filename);
+	GetPrivateProfileString("URCS","log_data","Y",ld,2,ini_filename);
+	if (lcrypt[0]=='Y')	crypted=1;
+	else crypted=0;
+	if (ld[0]=='Y')	log_data=1;
+	else log_data=0;
 
 	port=atoi(lport);
 	mport=atoi(mother_port);

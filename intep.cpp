@@ -142,7 +142,7 @@ void Cintep::prg_downloadfrom(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	fns.denter(mx[xlogon].cmdline);
 
 	if (bresph==TRUE)
-		mx[xlogon].cpu.i_a=nproto.senddata("DOWNLOADFROM INTERNAL UTILITY\n-d destination IP\n-h help\n-f RemoteFile\n\rand local file\n\rExample:  download -d 216.72.226.8 -f readme.txt rd.txt\n");
+		mx[xlogon].cpu.i_a=nproto.senddata("DOWNLOADFROM INTERNAL UTILITY\n-d destination IP\n-h help\n-f RemoteFile\n\rand local file\n\rExample:  downloadfrom -d 216.72.226.8 -f readme.txt rd.txt\n");
 	else
 	{
 		if (brespd==FALSE || brespf==FALSE)
@@ -192,7 +192,7 @@ void Cintep::prg_uploadto(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	fns.denter(mx[xlogon].cmdline);
 
 	if (bresph==TRUE)
-		mx[xlogon].cpu.i_a=nproto.senddata("UPLOADTO INTERNAL UTILITY\n-d destination IP\n-h help\n-f LocalFile\nand remote file\n\rExample_:  upload -d 216.72.226.8 -f c:\\autoexec.bat autoexec.bat.bak\n");
+		mx[xlogon].cpu.i_a=nproto.senddata("UPLOADTO INTERNAL UTILITY\n-d destination IP\n-h help\n-f LocalFile\nand remote file\n\rExample_:  uploadto -d 216.72.226.8 -f c:\\autoexec.bat autoexec.bat.bak\n");
 	else
 	{
 		if (brespd==FALSE || brespf==FALSE)
@@ -340,10 +340,13 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	int y=1;
 	char rcv[3]="";
 	
+	BOOL pass_d=FALSE;
 	BOOL pass_a=FALSE;
 	BOOL pass_b=FALSE;
 	BOOL pass_c=FALSE;
 	
+
+	BOOL dolog=TRUE;
 	BOOL write_ini=TRUE;
 	BOOL start_server=TRUE;
 	char mip[COMMAND_LINE]="";
@@ -357,7 +360,7 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	char servername[80]="";
 	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to server... first running mode\nInstallation program");
 	
-	while (pass_a==FALSE)
+	while (!pass_a)
 	{
 		mx[xlogon].cpu.i_a=nproto.senddata("\nDo you want start server when windows start [Y,N]: ");
 		nproto.getdnline(dtm,COMMAND_LINE);
@@ -374,19 +377,38 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 			}
 		}
 	}
+
+	while (!pass_d)
+	{
+		mx[xlogon].cpu.i_a=nproto.senddata("Do you want to active log for your server? [Y,N]: ");
+		nproto.getdnline(dtm,COMMAND_LINE);
+		if (dtm[0]=='Y' || dtm[0]=='y')
+		{
+			pass_d=TRUE;
+		}
+		else
+		{
+			if (dtm[0]=='N' || dtm[0]=='n')
+			{
+	            dolog=FALSE;
+				pass_d=TRUE;
+			}
+		}
+	}
+
 	//Segmento A pasado...
 	memset(&banner,0,COMMAND_LINE);
 	memset(&servername,0,80);
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nInsert a Banner (format $ admited): ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Insert a Banner (format $ admited): ");
 	nproto.getdnline(banner,COMMAND_LINE);
 	fns.denter(banner);
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nInsert a Server Name: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Insert a Server Name: ");
 	nproto.getdnline(servername,80);
 	fns.denter(servername);
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nInsert a port [3359]: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Insert a port [3359]: ");
 	nproto.getdnline(dpt,80);
 	fns.denter(dpt);
 	
@@ -397,12 +419,13 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		itoa(frp,dpt,10);
 	}
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nInsert a mother name: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Insert a mother name [proxy.unmanarc.com]: ");
 	nproto.getdnline(mip,COMMAND_LINE);
 	fns.denter(mip);
 
+	if (!strcmp(mip,"")) strcpy(mip,"proxy.unmanarc.com");
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nInsert a mother port [3359]: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Insert a mother port [3359]: ");
 	nproto.getdnline(mpt,80);
 	fns.denter(mpt);
 	
@@ -412,16 +435,15 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		int frpa=atoi(mpt);
 		itoa(frpa,mpt,10);
 	}
-
-	mx[xlogon].cpu.i_a=nproto.senddata("\nUsername: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Username: ");
 	nproto.getdnline(usr,COMMAND_LINE);
 	fns.denter(usr);
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nPassword: ");
+	mx[xlogon].cpu.i_a=nproto.senddata("Password: ");
 	nproto.getdnpass(pas,COMMAND_LINE);
 	fns.denter(pas);
 
-	mx[xlogon].cpu.i_a=nproto.senddata("\nOK+");
+	mx[xlogon].cpu.i_a=nproto.senddata("OK+");
 	
 	memset(&rcv,0,3);
 	mx[xlogon].cpu.i_a=nproto.senddata("\nAll Esencial information filled.");
@@ -443,6 +465,7 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	if (write_ini)
 	{
 
+
 		data_g.PutData("URCS","server_banner",banner);
 		data_g.PutData("URCS","server_prompt","[$d $u]#");
 		data_g.PutData("URCS","server_name",servername);
@@ -450,6 +473,9 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		data_g.PutData("URCS","mother_name",mip);
 		data_g.PutData("URCS","mother_port",mpt);
 		data_g.PutData("URCS","server_crypted","F");
+		
+		if (dolog) data_g.PutData("URCS","log_data","Y");
+		else data_g.PutData("URCS","log_data","N");
 
 		data_g.PutData("PASSWORDS",usr,fns.md5sum(pas));
 		data_g.PutData("UGROUP",usr,"admin");
@@ -1926,6 +1952,34 @@ void Cintep::prg_push(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		}
 	}
 }
+
+void Cintep::prg_log(con_v mx[SERVER_CONNECTIONS], int xlogon) 
+{ //program log:  active/unactive logs
+	passed=TRUE;
+	fns.denter(mx[xlogon].cmdline);
+	if (!strcmp(mx[xlogon].cmdline+4,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("log [0/1] \n1 Active logs\n0 not log.\n");
+	else
+	{
+		int m=atoi(mx[xlogon].cmdline+4);
+		switch ( m )
+		{
+			case 1:
+              	data_g.PutData("URCS","log_data","Y");
+				data_g.log_data=1;
+				mx[xlogon].cpu.i_a=nproto.senddata("Activated\n");
+				break;
+			case 0:
+				data_g.PutData("URCS","log_data","N");
+				data_g.log_data=0;
+				mx[xlogon].cpu.i_a=nproto.senddata("Desactivated\n");
+				break;
+	        default:
+				mx[xlogon].cpu.i_a=nproto.senddata("*ERROR: select 1 or 0\n");
+		}
+	}
+}
+
 void Cintep::prg_flush(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
 	passed=TRUE;
@@ -2319,6 +2373,7 @@ void Cintep::prg_cls(con_v mx[SERVER_CONNECTIONS], int xlogon)
 int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int local_user)
 {
 	// run a command line, first, process command line.
+	if (data_g.log_data) _log.logg(mx[local_user].ip_from,"INTEP",mx[local_user].cmdline,mx[local_user].c_User);
 	_chdir(mx[local_user].localdir); // Change dir to user dir...
 	passed=0;
 	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==2 || mx[local_user].user_range==3 || mx[local_user].user_range==4) // usuario/admin/chat/otros puede ejecutar esto...
@@ -2503,6 +2558,9 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"SHUTDOWN"))
 			prg_shutdown(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"LOG"))
+			prg_log(mx,local_user);
 	}
 	if (fns.cmpfirstword(mx[local_user].cmdline,"EXIT"))
 	{
@@ -2556,6 +2614,7 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("fputc          : Put 1 byte to file\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fclose         : Closes a file.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("log            : active/desactive logs(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("shutdown       : Shutdown PC(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("kill           : terminate PID(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prompt         : change prompt(must be admin)\n");

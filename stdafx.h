@@ -17,8 +17,8 @@ enjoy ;)
 #pragma once
 
 #define VIRTUAL_DATA 256
-#define SERVER_SLOTS 128
-#define SERVER_CONNECTIONS 128
+#define SERVER_SLOTS 150
+#define SERVER_CONNECTIONS 150
 #define FILE_SLOTS 256
 #define COMMAND_LINE 4092
 
