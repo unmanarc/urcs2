@@ -90,6 +90,15 @@ int Cproto::getdline(char *line)
 	strcpy(line,"");
 	return 0;
 }
+int Cproto::cls()
+{
+	int dlenght=5000; //5000 is a command to cls
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
 int Cproto::getdnpass(char *line,int max)
 {
 	//get pass

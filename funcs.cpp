@@ -301,7 +301,11 @@ char *Cfns::deparg(char *depu, char *arg, BOOL nax)
 		r=find32(res,1);
 	else
 		r=find32(res,2);
-	res[r-1]=0;
+
+	if (res[r-1]==32)
+		res[r-1]=0;
+	else
+		res[r]=0;
 	mw=(int)strlen(res);
 	//now res contain an argument... will now dep original string
 	//depuring res:

@@ -145,7 +145,12 @@ int Cproxy::start_proxy_instance(SOCKET client, SOCKET server)
 	return f;
 }
 
-
+BOOL Cproxy::pingproxy(SOCKET server)
+{
+	int f=send(server,"PING",80,0);
+	if (f<=0) return FALSE;
+	return TRUE;
+}
 //protected area:
 
 int Cproxy::GetBlock(void *p, int len, SOCKET m)
@@ -157,3 +162,4 @@ int Cproxy::GetBlock(void *p, int len, SOCKET m)
 	memcpy(p,&tmpdata,tmpLen);
 	return tmpLen;
 }
+

@@ -41,7 +41,7 @@ public:
 	int receive(char *data);
 	int getproxyline();
 	int GetBlock(void *p, int len);
-
+	int cls();
 	//For proxy tunneling:
     
 

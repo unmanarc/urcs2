@@ -15,6 +15,7 @@ enjoy ;)
 #include "funcs.h"
 #include "intep.h"
 #include <direct.h>
+#include "proxy.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -47,9 +48,22 @@ Ccore::~Ccore()
 
 int Ccore::findpipefree()
 {
+	Cproxy prx;
 	for (int fnd=0; fnd<SERVER_SLOTS;fnd++)
-		if (svrs[fnd].busy==FALSE)
-			return fnd;
+	{
+		//releasing disconnected proxys
+		if (svrs[fnd].busy && !svrs[fnd].cbsy)
+		{
+			if (!prx.pingproxy(svrs[fnd].f))
+			{ //release
+				svrs[fnd].busy=0;
+				svrs[fnd].cbsy=0;
+				closesocket(svrs[fnd].f);
+			}
+		}
+	}
+	for (int fnd=0; fnd<SERVER_SLOTS;fnd++)
+		if (!svrs[fnd].busy) return fnd;
 	return -1;
 }
 
@@ -76,6 +90,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 		Cfns fnc; //for use diverse functions.
 		cnts[z].busy=1; //inmediatly busy this connection
 		cnts[z].socket=temp; //Assing socket to struct
+		cnts[z].m_mem.release_mem();
 		for (int i=0; i<FILE_SLOTS;i++) cnts[z].files[i]=0; //Release file handlers
 
 		strcpy(cnts[z].ip_from,ip); //Assing IP addr from
@@ -104,10 +119,9 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				return -1;
 			}
 				//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.3\n\r");
+			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.3 build 2 - MDP\n");
 			protocol.senddata(data_g.server_banner);
-			protocol.senddata("\n\r");
-			
+			protocol.senddata("\n");
 			int level; //privilege levels
 			if (data_g.installed) level=0; //privilege level on logon
 			else level=4; //privilege level on instalation
@@ -130,6 +144,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				if (level==3) 
 				{
 					//Logged on.
+					protocol.cls();
 					Cintep intep; //make new interpreter
 					intep.start_intep(cnts,z,protocol.getkey());
                        // print command line take parameter and process them
@@ -184,6 +199,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 			if(asproxy) 				//end of while... 
 				protocol.sendclose();
 		}
+		cnts[z].m_mem.release_mem();
 		cnts[z].busy=0;
 	}
 	else

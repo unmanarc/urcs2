@@ -39,6 +39,7 @@ protected:
 	void prg_echo(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: echo
 	void prg_sleep(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: Sleep
 	void prg_md5(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: MD5 string
+	void prg_cls(con_v mx[SERVER_CONNECTIONS], int xlogon); //ClearScreen
 
 	void prg_msgbox(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_ls(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: LS - List files
@@ -69,7 +70,7 @@ protected:
 
 	void prg_cmp(con_v mx[SERVER_CONNECTIONS], int xlogon);
 
-
+	void prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: removes entry from vars.
 	void prg_setenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: set enviroment var.
 	void prg_promptenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: Prompt and save to enviroment var.
 

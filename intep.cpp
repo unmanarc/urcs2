@@ -141,14 +141,37 @@ void Cintep::prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS]
 	passed=TRUE;
 	char exterm[COMMAND_LINE];
 	mx[xlogon].cpu.i_a=nproto.senddata("   ID  SOCK                IP     Name of server\n");
+	Cproxy prd;
 	for(int n=0;n<SERVER_SLOTS;n++)
 	{
 		if (svrs[n].busy)
 		{
-			sprintf(exterm,"%5u %5u %17s %18s\n",n,svrs[n].f,svrs[n].ip,svrs[n].nameserver);
-			mx[xlogon].cpu.i_a=nproto.senddata(exterm);
+			if (!svrs[n].cbsy)
+			{
+                if (prd.pingproxy(svrs[n].f))
+				{
+					//proxy is alive. showing data.
+					sprintf(exterm,"%5u %5u %17s %18s\n",n,svrs[n].f,svrs[n].ip,svrs[n].nameserver);
+					mx[xlogon].cpu.i_a=nproto.senddata(exterm);
+                }
+				else
+				{
+					//proxy is not alive. deleting entry. and closing socket.
+					svrs[n].busy=0;
+					svrs[n].cbsy=0;
+					closesocket(svrs[n].f);
+				}
+			}
+			else
+			{
+				//user are connected to proxy.
+				//proxy is alive. showing data.
+				sprintf(exterm,"%5u %5u %17s *%18s\n",n,svrs[n].f,svrs[n].ip,svrs[n].nameserver);
+				mx[xlogon].cpu.i_a=nproto.senddata(exterm);
+			}
 		}
 	}
+	mx[xlogon].cpu.i_a=nproto.senddata("* denotes that proxy is in use.");
 }
 void Cintep::prg_prx_close(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
 {
@@ -1747,6 +1770,28 @@ void Cintep::prg_setenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: set
 		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
 	}
 }
+
+void Cintep::prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
+{
+	passed=TRUE;
+	char resph[12];
+	BOOL bresph=0;
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+	if (strcmp(resph,"-h")) bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+	if (bresph || !strcmp(mx[xlogon].cmdline+8,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("freeenv [-h] variable\n-h help\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline+8);
+		int mrt=mx[xlogon].m_mem.putmem(mx[xlogon].cmdline+8,"",0);
+		if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+	}
+}
+
 void Cintep::prg_promptenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
 {
 	passed=TRUE;
@@ -1867,7 +1912,11 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 		}
 	}
 }
-
+void Cintep::prg_cls(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.cls();
+}
 int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int local_user)
 {
 	// run a command line, first, process command line.
@@ -1886,11 +1935,17 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"MD5"))
 			prg_md5(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"CLS"))
+			prg_cls(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"ECHO"))
 			prg_echo(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"PROMPTENV"))
 			prg_promptenv(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"FREEENV"))
+			prg_freeenv(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"SETENV"))
 			prg_setenv(mx,local_user);
@@ -2042,56 +2097,58 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 {
 	passed=TRUE;
 	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to unmanarc remote control server...\nlist of commands:\n\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("run             : run excecutes script on server.\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("cmp			    : compares 2 formatted strings (echo is suppresed to internal vars.).\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("echo            : Echo characters introduced by command line\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("promptenv		: prompt client for enviroment variable\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("setenv			: set enviroment variable\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("MD5             : MD5 string introduced in command line\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("Sleep           : Wait [n] milliseconds\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("ls              : list files\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("winexec         : run process in [n] mode\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("mkdir           : Make a directory\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("rmdir           : Removes a directory\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("cp              : Copy File in another location\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("mv              : Move File in another location\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("rm              : remove file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("ps              : List Proccesses\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("cd              : change directory\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("cat             : show file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("msgbox			: Shows an AfxMessageBox on server\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("df				: Show Space free at this directory\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("who             : show information about users connected to the system\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("passwd          : change's password of local user\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("run            : run excecutes script on server.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cmp            : compares 2 formatted strings\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("echo           : Echo characters introduced by command line\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cls            : cls clear screen\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("freeenv        : prompt client for enviroment variable\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("promptenv      : prompt client for enviroment variable\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("setenv         : set enviroment variable\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("MD5            : MD5 string introduced in command line\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("Sleep          : Wait [n] milliseconds\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("ls             : list files\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("winexec        : run process in [n] mode\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mkdir          : Make a directory\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("rmdir          : Removes a directory\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cp             : Copy File in another location\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mv             : Move File in another location\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("rm             : remove file\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("ps             : List Proccesses\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cd             : change directory\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cat            : show file\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("msgbox         : Shows an AfxMessageBox on server\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("df             : Show Space free at this directory\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("who            : show information about users connected\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("passwd         : change's password of local user\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fopen			: Open's file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fgets			: Read a line from file handler\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fputs			: Puts $ formated data at file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fgetc			: Read 1 byte from file and display\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fputc			: Put 1 byte to file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("fclose			: Closes a file.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fopen          : Open's file\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fgets          : Read a line from file handler\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fputs          : Puts $ formated data at file\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fgetc          : Read 1 byte from file and display\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fputc          : Put 1 byte to file\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("fclose         : Closes a file.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("shutdown        : Shutdown PC(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("kill            : terminate PID(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("prompt          : change prompt(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("mkuser          : creates another user (must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("rmuser          : remove user from database(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("shutdown       : Shutdown PC(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("kill           : terminate PID(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("prompt         : change prompt(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mkuser         : creates another user (must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("rmuser         : remove user from database(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_lookup      : resolves name into dotted ip addr.\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_opensocket  : Open TCP raw connection to IP(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_set_timeout : Send data to TCP socket(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_send        : Send data to TCP socket(must be admin)\n");
-//	mx[xlogon].cpu.i_a=nproto.senddata("net_sendto      : Send data to UDP socket(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_receive     : Receive data from TCP socket(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("net_closesocket : Close opened socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_lookup     : resolves name into dotted ip addr.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_opensocket : Open TCP raw connection to IP(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_set_timeout: Send data to TCP socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_send       : Send data to TCP socket(must be admin)\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("net_sendto     : Send data to UDP socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_receive    : Receive data from TCP socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_closesocket: Close opened socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("prx_connect     : tunnel to specified server\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("prx_who         : List tunnels\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("prx_close       : Restart connection to tunnel\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("prx_connect    : tunnel to specified server\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("prx_who        : List tunnels\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("prx_close      : Restart connection to tunnel\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("downloadfrom    : download file from CTOOL fileserver\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("uploadto        : upload file to CTOOL fileserver\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("downloadfrom   : download file from CTOOL fileserver\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("uploadto       : upload file to CTOOL fileserver\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("help            : show this help\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("help           : show this help\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\nNOTE: some program's may not work if you don't have privilege.\n");
 }

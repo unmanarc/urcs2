@@ -116,6 +116,10 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 						getpass(line,512);
 						tm=cln.senddata(line);
 					}
+					if (tm==5000) //mode for request line
+					{
+						system("cls");
+					}
 				}
 				cln.closesock();
             }
