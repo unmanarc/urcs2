@@ -172,6 +172,43 @@ LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_VENEZUELA
 #pragma code_page(1252)
 #endif //_WIN32
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG1 DIALOGEX 0, 0, 275, 126
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Installing"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LISTBOX         IDC_LIST1,7,7,261,94,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
+                    LBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP,
+                    WS_EX_STATICEDGE
+    PUSHBUTTON      "install",IDC_BUTTON1,7,104,261,15
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 268
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 119
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -216,43 +253,6 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\installer.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_DIALOG1 DIALOGEX 0, 0, 275, 126
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
-CAPTION "Installing"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    LISTBOX         IDC_LIST1,7,7,261,94,LBS_SORT | LBS_NOINTEGRALHEIGHT | 
-                    LBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP,
-                    WS_EX_STATICEDGE
-    PUSHBUTTON      "install",IDC_BUTTON1,7,104,261,15
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
-BEGIN
-    IDD_DIALOG1, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 268
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 119
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
 
 /////////////////////////////////////////////////////////////////////////////
 //

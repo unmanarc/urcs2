@@ -92,7 +92,22 @@ int Cproto::l_push(char *data)
 	fgetpos(tempfile,&w_pos);
 	return 0;
 }
-
+int Cproto::setdefaultcolor()
+{
+	return setcolor(7);
+}
+int Cproto::senddatacenter(char *data, short line) 
+{
+	size_t lugar=strlen(data);
+	if (lugar>80) setposxy(1,line);
+	else
+	{
+		lugar=lugar/2;
+		lugar=40-lugar;
+		setposxy((int)lugar,line);
+	}
+    return senddata(data);
+}
 int Cproto::senddatahex(char *data, int lenght) //send as maximum 4094 bytes of data.
 {
 	__int64 offset=0;

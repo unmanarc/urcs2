@@ -25,7 +25,7 @@ enjoy ;)
 #define COMMAND_LINE 4092
 
 #define HASH_DEFAULT ""
-
+#define BANNER "URCS - Unmanarc Remote Control Server - 1.0.7 Trinity Glow"
 
 //MACROS para texcolor, textbackground, etc.
 #define BLACK		 0	//NEGRO
@@ -89,6 +89,7 @@ typedef struct conections
 	BOOL busy; // this connection is busy?
 	BOOL proxy; // this connection is a proxy or normal user?
 	char c_Cwd[256]; //Current working directory for this user
+	
 	int user_range; // range of user
 	// -1: blocked user
 	// 0: Admin 

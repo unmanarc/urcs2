@@ -27,7 +27,7 @@ public:
 	int sendclose();
 	//variables...
 	char in_ip[256];
-
+	
 	//proxy protocol.:
 	BOOL prx;
 	char nameserver[512];
@@ -41,11 +41,13 @@ public:
 	int recvfile(char *remotefilename, char *localfilename);
 	int senddatahex(char *data, int lenght); //send as maximum 4094 bytes of data hex.
 	int senddata(char *data); //Send NULL-TERMINATED string to socket
+	int senddatacenter(char *data, short line); //Send data centered.
 	int getdline(char *line); //Get 10-13 terminated line.
 	int getdnline(char *line,int max); //Get 10-13 terminated line with maximum
 	int getdnpass(char *line,int max); //Get 10-13 terminated pass with maximum
 	int getnchar(char *chr, int chars); //Get n characters from host
 	int setcolor(unsigned short color);
+	int setdefaultcolor();
 	int setbackground(unsigned short color);
 	int setposxy(int posx, int posy);
 	int clreol(void);//Borrar hasta el final de línea

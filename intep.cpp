@@ -33,10 +33,121 @@ static char THIS_FILE[]=__FILE__;
 
 Cintep::Cintep()
 { //Constructor
+	bye=FALSE;
 	data_g.LoadData();
 }
 Cintep::~Cintep()
 {
+}
+
+void Cintep::prg_banner(con_v mx[SERVER_CONNECTIONS], int xlogon) //change banner
+{
+	passed=TRUE;
+	data_g.PutData("URCS","server_banner",mx[xlogon].cmdline+7);
+	data_g.LoadData();
+	mx[xlogon].cpu.i_a=nproto.senddata("Banner changed...\n");
+}
+void Cintep::prg_sname(con_v mx[SERVER_CONNECTIONS], int xlogon) //change server_name
+{
+	passed=TRUE;
+	data_g.PutData("URCS","server_name",mx[xlogon].cmdline+5);
+	data_g.LoadData();
+	mx[xlogon].cpu.i_a=nproto.senddata("Server name changed...\n");
+}
+void Cintep::prg_sport(con_v mx[SERVER_CONNECTIONS], int xlogon) //change server_port
+{
+	passed=TRUE;
+	char sPort[80];
+	int iPort=atoi(mx[xlogon].cmdline+5);
+	if (iPort>65535 || iPort < 1)
+	{
+		mx[xlogon].cpu.i_a=nproto.senddata("Invalid port ranges (1-65535)...\nURCS works at 3359 by default\n");
+	}
+	else
+	{
+		itoa(iPort,sPort,10);
+		data_g.PutData("URCS","server_port",sPort);
+		data_g.LoadData();
+		mx[xlogon].cpu.i_a=nproto.senddata("Server port changed to:");
+		mx[xlogon].cpu.i_a=nproto.senddata(sPort);
+		mx[xlogon].cpu.i_a=nproto.senddata("\nPlease do \"restart\" to do effect\n");
+	}
+}
+void Cintep::prg_mport(con_v mx[SERVER_CONNECTIONS], int xlogon) //change mother_port
+{
+	passed=TRUE;
+	char sPort[80];
+	int iPort=atoi(mx[xlogon].cmdline+5);
+	if (iPort>65535 || iPort < 1)
+	{
+		mx[xlogon].cpu.i_a=nproto.senddata("Invalid port ranges (1-65535)...\nURCS works at 3359 by default\n");
+	}
+	else
+	{
+		itoa(iPort,sPort,10);
+		data_g.PutData("URCS","mother_port",sPort);
+		data_g.LoadData();
+		mx[xlogon].cpu.i_a=nproto.senddata("Mother port changed to:");
+		mx[xlogon].cpu.i_a=nproto.senddata(sPort);
+		mx[xlogon].cpu.i_a=nproto.senddata("\nPlease do \"restart\" to do effect\n");
+	}
+}
+void Cintep::prg_mname(con_v mx[SERVER_CONNECTIONS], int xlogon) //change mother name
+{
+	passed=TRUE;
+	data_g.PutData("URCS","mother_name",mx[xlogon].cmdline+5);
+	data_g.LoadData();
+	mx[xlogon].cpu.i_a=nproto.senddata("Mother name changed...\n");
+}
+void Cintep::prg_restart(con_v mx[SERVER_CONNECTIONS], int xlogon) //restart server
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.senddata("Warning: All server operations will be closed now....\nrestarting...\n");
+	//Start new server with 5 seconds of delay
+	char newsvr[_MAX_PATH+20];
+	strcpy(newsvr,data_g.lcname);
+	strcat(newsvr," delay");
+
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+
+    // Start the child process. 
+    if( !CreateProcess( NULL, // No module name (use command line). 
+        newsvr, // Command line. 
+        NULL,             // Process handle not inheritable. 
+        NULL,             // Thread handle not inheritable. 
+        FALSE,            // Set handle inheritance to FALSE. 
+        0,                // No creation flags. 
+        NULL,             // Use parent's environment block. 
+        NULL,             // Use parent's starting directory. 
+        &si,              // Pointer to STARTUPINFO structure.
+        &pi )             // Pointer to PROCESS_INFORMATION structure.
+    ) 
+    {
+		mx[xlogon].cpu.i_a=nproto.senddata("CreateProcess failed.\n" );
+    }
+    // Wait until child process exits.
+//    WaitForSingleObject( pi.hProcess, INFINITE );
+    // Close process and thread handles. 
+    CloseHandle( pi.hProcess );
+    CloseHandle( pi.hThread );
+	//CreateProcess(NULL, newsvr);
+	//WinExec(newsvr,0);
+	//closing server...
+	bye=1;
+}
+void Cintep::prg_restart_mother(con_v mx[SERVER_CONNECTIONS], int xlogon) //restart connection with mother
+{
+	passed=TRUE;
+}
+void Cintep::prg_upgrade(con_v mx[SERVER_CONNECTIONS], int xlogon) //upgrade server with mother server version
+{
+	
+	passed=TRUE;
 }
 void Cintep::prg_upload(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
@@ -218,7 +329,9 @@ void Cintep::prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS]
 {
 	passed=TRUE;
 	char exterm[COMMAND_LINE];
+	mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTBLUE);
 	mx[xlogon].cpu.i_a=nproto.senddata("   ID  SOCK                IP     Name of server\n");
+	mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
 	Cproxy prd;
 	for(int n=0;n<SERVER_SLOTS;n++)
 	{
@@ -244,8 +357,10 @@ void Cintep::prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS]
 			{
 				//user are connected to proxy.
 				//proxy is alive. showing data.
-				sprintf(exterm,"%5u %5u %17s *%18s\n",n,svrs[n].f,svrs[n].ip,svrs[n].nameserver);
+				sprintf(exterm,"%5u %5u %17s %18s\n",n,svrs[n].f,svrs[n].ip,svrs[n].nameserver);
+				mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTRED);
 				mx[xlogon].cpu.i_a=nproto.senddata(exterm);
+				mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
 			}
 		}
 	}
@@ -253,7 +368,6 @@ void Cintep::prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS]
 }
 void Cintep::prg_prx_close(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
 {
-	//USAGE: prx_connect prx_id
 	passed=TRUE;
 	char exlusive[COMMAND_LINE];
 	int mew=0;
@@ -277,13 +391,43 @@ void Cintep::prg_prx_close(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOT
 	}
 	if (svrs[mew].cbsy)
 	{
-		mx[xlogon].cpu.i_a=nproto.senddata("Another client are connected to this server.\n");
-		return;
+		mx[xlogon].cpu.i_a=nproto.senddata("Another client are connected to this server.\nThis operation will stop any communication\n");
+//		return;
 	}
 	closesocket(svrs[mew].f);
 	svrs[mew].cbsy=0;
 	svrs[mew].busy=0;
 	mx[xlogon].cpu.i_a=nproto.senddata("Closed Connection :S we hope that client are alive\n");
+}
+void Cintep::prg_prx_attach(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
+{
+	//prx_attach -h -p port hostname
+	passed=TRUE;
+
+	char respp[COMMAND_LINE];
+	char resph[12];
+
+	BOOL bresph=FALSE;
+	BOOL brespp=FALSE;
+
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),COMMAND_LINE);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=TRUE;
+	if (strcmp(respp,"-p"))
+		brespp=TRUE;
+
+	if (bresph==TRUE || !strcmp(mx[xlogon].cmdline+11,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("PRX_ATTACH utility connect to another URCS\n-p port\n-h this help\nExample:  prx_attach -p 3359 proxy.unmanarc.com\n");
+	else
+	{
+		Cproxy prd;
+		unsigned int prt;
+		if (brespp) prt=atoi(respp);
+		else prt=3359;
+		int i=prd.attach(mx[xlogon].cmdline+11,prt,mx[xlogon].socket);
+	}
 }
 void Cintep::prg_prx_connect(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
 {
@@ -343,7 +487,6 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	BOOL pass_a=FALSE;
 	BOOL pass_b=FALSE;
 	BOOL pass_c=FALSE;
-	
 
 	BOOL dolog=TRUE;
 	BOOL write_ini=TRUE;
@@ -357,7 +500,11 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 
 	char banner[COMMAND_LINE]="";
 	char servername[80]="";
-	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to server... first running mode\nInstallation program");
+
+	mx[xlogon].cpu.i_a=nproto.cls();
+	mx[xlogon].cpu.i_a=nproto.senddatacenter("Welcome to server... first running mode",1);
+	mx[xlogon].cpu.i_a=nproto.senddatacenter("Installation program",2);
+	mx[xlogon].cpu.i_a=nproto.senddata("\n");
 	
 	while (!pass_a)
 	{
@@ -461,9 +608,8 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	if (write_ini)
 	{
 
-
 		data_g.PutData("URCS","server_banner",banner);
-		data_g.PutData("URCS","server_prompt","[$d $u]#");
+		data_g.PutData("URCS","server_prompt","[$d $u]");
 		data_g.PutData("URCS","server_name",servername);
 		data_g.PutData("URCS","server_port",dpt);
 		data_g.PutData("URCS","mother_name",mip);
@@ -977,9 +1123,79 @@ void Cintep::prg_kill(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	passed=TRUE;
 	//Kill a process..
 	//Command: KILL
+	char mko[80];
 	int pid=atoi(mx[xlogon].cmdline+5); //convert input to integer
 	fns.KillProcess(pid); //Send termination signal
-	mx[xlogon].cpu.i_a=nproto.senddata("Termination Signal Sended...\n"); //Send message...
+	mx[xlogon].cpu.i_a=nproto.senddata("Termination Signal Sended to:"); //Send message...
+	itoa(pid,mko,10);
+	mx[xlogon].cpu.i_a=nproto.senddata(mko);
+	mx[xlogon].cpu.i_a=nproto.senddata("\n"); //Send message...
+}
+
+void Cintep::prg_killall(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.senddata("KILLALL Internal Program\n");
+	if (mx[xlogon].cmdline[8]=='-' && mx[xlogon].cmdline[9]=='h')
+	{
+		mx[xlogon].cpu.i_a=nproto.senddata("Usage:\nKillAll processname\nthe matchs (can be substrings) will be killed\n");
+	}
+	else
+	{
+		if (!strcmp(mx[xlogon].cmdline+8,"")) 
+		{
+			mx[xlogon].cpu.i_a=nproto.senddata("WARNING: Must select any filter\nusage \"killall -h\" to more help\n");
+			return;
+		}
+		long r;
+		HANDLE hSnapShot;
+		PROCESSENTRY32 uProcess;
+		hSnapShot = CreateToolhelp32Snapshot (TH32CS_SNAPALL, NULL);
+		uProcess.dwSize= sizeof(uProcess);
+		r = Process32First (hSnapShot, &uProcess );
+		while (r)
+		{
+            char cmpare[COMMAND_LINE];
+			char exterm[COMMAND_LINE];
+			if (!data_g.nt)
+			{
+				LPSTR pCurChar;
+				for (pCurChar = (uProcess.szExeFile + lstrlen (uProcess.szExeFile));
+					*pCurChar != '\\' && pCurChar != uProcess.szExeFile; 
+					--pCurChar)
+				strcpy(cmpare,pCurChar);
+			}
+			else //WinNT! (names are in low format)
+			{
+				strcpy(cmpare,uProcess.szExeFile);
+			}
+			strupr(cmpare);
+			strupr(mx[xlogon].cmdline);
+			if (strstr(cmpare,mx[xlogon].cmdline+8)!=NULL)
+			{
+				sprintf(exterm,"Sending Termination Signal to: %05u - %-20s ",uProcess.th32ProcessID,cmpare);
+				mx[xlogon].cpu.i_a=nproto.senddata(exterm);
+				if (fns.KillProcess(uProcess.th32ProcessID))
+				{
+					mx[xlogon].cpu.i_a=nproto.senddata("[");
+					mx[xlogon].cpu.i_a=nproto.setcolor(GREEN);
+					mx[xlogon].cpu.i_a=nproto.senddata("DONE");
+					mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
+					mx[xlogon].cpu.i_a=nproto.senddata("]\n");
+				}
+				else
+				{
+					mx[xlogon].cpu.i_a=nproto.senddata("[");
+					mx[xlogon].cpu.i_a=nproto.setcolor(RED);
+					mx[xlogon].cpu.i_a=nproto.senddata("FAIL");
+					mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
+					mx[xlogon].cpu.i_a=nproto.senddata("]\n");
+				}
+			}
+			r = Process32Next(hSnapShot, &uProcess );
+		}
+	}
+
 }
 
 void Cintep::prg_rmuser(con_v mx[SERVER_CONNECTIONS], int xlogon) //deletes user
@@ -1837,59 +2053,107 @@ void Cintep::prg_ls(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: LS - Li
 		}
 		do 
 		{
-			// get format:
-			if (brespc==TRUE || brespl==TRUE)
+			//directory?
+			if (brespd && (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
 			{
-				//All file data...
 				char datafile[1500];
 				time_t fct=fns.TimetFromFt(ffd.ftCreationTime);
 				time_t flat=fns.TimetFromFt(ffd.ftLastAccessTime);
 				time_t flwt=fns.TimetFromFt(ffd.ftLastWriteTime);
-
+	
+				//prefix:
+				if (brespc)
+					mx[xlogon].cpu.i_a=nproto.senddata("------------------------------------------------------------------------------\nFileName             : ");
+				else if (brespl)
+				{
+						char ed[80];
+						strcpy(ed,ctime(&flwt));
+						fns.denter(ed);
+						sprintf(datafile,"%25s %7u %03X ",ed,ffd.nFileSizeLow,ffd.dwFileAttributes,ffd.cFileName);
+						mx[xlogon].cpu.i_a=nproto.senddata(datafile);
+				}
+				//get extension
+				char ext[12]="";
+				strncpy(ext,fns.extview(ffd.cFileName),12);
+				strupr(ext);
+				//select color...
+				if (!strcmp(ext,"EXE") || !strcmp(ext,"COM") || !strcmp(ext,"BAT") || !strcmp(ext,"VBS") ||!strcmp(ext,"EXE") || !strcmp(ext,"CMD")|| !strcmp(ext,"JAR")|| !strcmp(ext,"WSH")|| !strcmp(ext,"JSE") || !strcmp(ext,"JS") || !strcmp(ext,"PIF") || !strcmp(ext,"VBE") || !strcmp(ext,"WSF"))
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTGREEN);//pintar como verde
+				if (!strcmp(ext,"BAT") || !strcmp(ext,"VBS") || !strcmp(ext,"CMD")|| !strcmp(ext,"WSH")|| !strcmp(ext,"JSE") || !strcmp(ext,"JS") || !strcmp(ext,"VBE") || !strcmp(ext,"JAR")|| !strcmp(ext,"WSF"))
+					mx[xlogon].cpu.i_a=nproto.setcolor(GREEN);//pintar como verde
+				if (!strcmp(ext,"ZIP") || !strcmp(ext,"RAR") || !strcmp(ext,"ARJ") || !strcmp(ext,"TAR") || !strcmp(ext,"TGZ") ||
+					!strcmp(ext,"BAK") || !strcmp(ext,"MSI") || !strcmp(ext,"PAK") )
+					mx[xlogon].cpu.i_a=nproto.setcolor(RED);//pintar como rojo
+				if (!strcmp(ext,"JPG") || !strcmp(ext,"ICO") || !strcmp(ext,"JPE") || !strcmp(ext,"BMP") || !strcmp(ext,"PNG") || !strcmp(ext,"GIF") || !strcmp(ext,"JPEG") || !strcmp(ext,"PSD") )
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTMAGENTA);//pintar como magenta brillante
+				if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTBLUE);//set colour to blue.
+				// print filename.
+				mx[xlogon].cpu.i_a=nproto.senddata(ffd.cFileName);
+				mx[xlogon].cpu.i_a=nproto.senddata("\n");
+				//return to normal color.
+				mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
+				// print sufix
 				if (brespc)
 				{
-					sprintf(datafile,"*****************************\n\rFilename: %s\n\rFile Alternate name: %s\n\rFile Size High: %u\n\rFile Size Low: %u\n\rFile Creation time: %s\rFile Last Access time: %s\rFile Last Write time: %s",
-					ffd.cFileName,
-					ffd.cAlternateFileName,
-					ffd.nFileSizeHigh,
-					ffd.nFileSizeLow,
-					ctime(&fct),
-					ctime(&flat),
-					ctime(&flwt)
-					);
+					//sufix of brespc
+					sprintf(datafile,"File Alternate name  : %s\nFile Size High       : %u\nFile Size Low        : %u\nFile Creation time   : %sFile Last Access time: %sFile Last Write time : %s",
+					ffd.cAlternateFileName,	ffd.nFileSizeHigh,
+					ffd.nFileSizeLow, ctime(&fct),	ctime(&flat), ctime(&flwt)	);
 					mx[xlogon].cpu.i_a=nproto.senddata(datafile);
-					mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
+					mx[xlogon].cpu.i_a=nproto.senddata("\n");
 				}
-				if (brespl)
-				{
-					
-					char ed[80];
-					strcpy(ed,ctime(&flwt));
-					fns.denter(ed);
-					sprintf(datafile,"%25s %7u %s",	ed,ffd.nFileSizeLow,ffd.cFileName);
-					mx[xlogon].cpu.i_a=nproto.senddata(datafile);
-					mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
-
-				}
-
 			}
-			else
+			if(!brespd)
 			{
-				if (ffd.dwFileAttributes == 0x10 || ffd.dwFileAttributes == 0x11 || ffd.dwFileAttributes == 0x12 || ffd.dwFileAttributes == 0x14 || ffd.dwFileAttributes == 0x18)
+				char datafile[1500];
+				time_t fct=fns.TimetFromFt(ffd.ftCreationTime);
+				time_t flat=fns.TimetFromFt(ffd.ftLastAccessTime);
+				time_t flwt=fns.TimetFromFt(ffd.ftLastWriteTime);
+	
+				//prefix:
+				if (brespc)
+					mx[xlogon].cpu.i_a=nproto.senddata("------------------------------------------------------------------------------\nFileName             : ");
+				else if (brespl)
 				{
-					mx[xlogon].cpu.i_a=nproto.senddata(ffd.cFileName);
-					mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
+						char ed[80];
+						strcpy(ed,ctime(&flwt));
+						fns.denter(ed);
+						sprintf(datafile,"%25s %7u %03X ",ed,ffd.nFileSizeLow,ffd.dwFileAttributes,ffd.cFileName);
+						mx[xlogon].cpu.i_a=nproto.senddata(datafile);
 				}
-				else
+				//get extension
+				char ext[12]="";
+				strncpy(ext,fns.extview(ffd.cFileName),12);
+				strupr(ext);
+				//select color...
+				if (!strcmp(ext,"EXE") || !strcmp(ext,"COM") || !strcmp(ext,"BAT") || !strcmp(ext,"VBS") ||!strcmp(ext,"EXE") || !strcmp(ext,"CMD")|| !strcmp(ext,"JAR")|| !strcmp(ext,"WSH")|| !strcmp(ext,"JSE") || !strcmp(ext,"JS") || !strcmp(ext,"PIF") || !strcmp(ext,"VBE") || !strcmp(ext,"WSF"))
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTGREEN);//pintar como verde
+				if (!strcmp(ext,"BAT") || !strcmp(ext,"VBS") || !strcmp(ext,"CMD")|| !strcmp(ext,"WSH")|| !strcmp(ext,"JSE") || !strcmp(ext,"JS") || !strcmp(ext,"VBE") || !strcmp(ext,"JAR")|| !strcmp(ext,"WSF"))
+					mx[xlogon].cpu.i_a=nproto.setcolor(GREEN);//pintar como verde
+				if (!strcmp(ext,"ZIP") || !strcmp(ext,"RAR") || !strcmp(ext,"ARJ") || !strcmp(ext,"TAR") || !strcmp(ext,"TGZ") ||
+					!strcmp(ext,"BAK") || !strcmp(ext,"MSI") || !strcmp(ext,"PAK") )
+					mx[xlogon].cpu.i_a=nproto.setcolor(RED);//pintar como rojo
+				if (!strcmp(ext,"JPG") || !strcmp(ext,"ICO") || !strcmp(ext,"JPE") || !strcmp(ext,"BMP") || !strcmp(ext,"PNG") || !strcmp(ext,"GIF") || !strcmp(ext,"JPEG") || !strcmp(ext,"PSD") )
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTMAGENTA);//pintar como magenta brillante
+				if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+					mx[xlogon].cpu.i_a=nproto.setcolor(LIGHTBLUE);//set colour to blue.
+				// print filename.
+				mx[xlogon].cpu.i_a=nproto.senddata(ffd.cFileName);
+				mx[xlogon].cpu.i_a=nproto.senddata("\n");
+				//return to normal color.
+				mx[xlogon].cpu.i_a=nproto.setdefaultcolor();
+				// print sufix
+				if (brespc)
 				{
-					if (!brespd)
-					{
-						mx[xlogon].cpu.i_a=nproto.senddata(ffd.cFileName);
-						mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
-					}
+					//sufix of brespc
+					sprintf(datafile,"File Alternate name  : %s\nFile Size High       : %u\nFile Size Low        : %u\nFile Creation time   : %sFile Last Access time: %sFile Last Write time : %s",
+					ffd.cAlternateFileName,	ffd.nFileSizeHigh,
+					ffd.nFileSizeLow, ctime(&fct),	ctime(&flat), ctime(&flwt)	);
+					mx[xlogon].cpu.i_a=nproto.senddata(datafile);
+					mx[xlogon].cpu.i_a=nproto.senddata("\n");
 				}
 			}
-
 		} while (FindNextFile(sh, &ffd));
 		FindClose(sh);
 	}
@@ -2036,7 +2300,7 @@ void Cintep::prg_md5(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: MD5 st
 {
 	passed=TRUE;
 	fns.denter(mx[xlogon].cmdline);
-	mx[xlogon].cpu.i_a=nproto.senddata(fns.convert(fns.md5sum(fns.convert(mx[xlogon].cmdline+4,mx, xlogon)),mx, xlogon));
+	mx[xlogon].cpu.i_a=nproto.senddata(fns.md5sum(fns.convert(mx[xlogon].cmdline+4,mx,xlogon)));
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
 }
 void Cintep::prg_df(con_v mx[SERVER_CONNECTIONS], int xlogon) //Disk free.
@@ -2083,7 +2347,32 @@ void Cintep::start_intep(con_v mx[SERVER_CONNECTIONS], int local_user, char *new
 
 int	Cintep::printprompt(con_v mx[SERVER_CONNECTIONS], int local_user)
 { //print prompt specified in data_g and converted with "convert"
-	return nproto.senddata(fns.convert(data_g.server_prompt,mx,local_user));
+	int rt=nproto.senddata(fns.convert(data_g.server_prompt,mx,local_user));
+	if (mx[local_user].user_range==0)
+	{
+		//root
+		nproto.setcolor(GREEN);
+		nproto.senddata("#");
+		nproto.setdefaultcolor();
+	}
+	else
+	{
+		if (mx[local_user].user_range==1)
+		{
+			//usuario
+			nproto.setcolor(GREEN);
+			nproto.senddata("$");
+			nproto.setdefaultcolor();
+		}
+		else
+		{
+			//usuarios sin privilegios
+			nproto.setcolor(RED);
+			nproto.senddata("\\");
+			nproto.setdefaultcolor();
+		}
+	}
+	return rt;
 }
 void Cintep::prg_push(con_v mx[SERVER_CONNECTIONS], int xlogon) 
 { //program push:  push all data ouputed by "senddata" to buffer
@@ -2790,6 +3079,9 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 	}
 	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==4) // usuario/admin/route puede ejecutar esto...
 	{
+		if (fns.cmpfirstword(mx[local_user].cmdline,"PRX_ATTACH"))
+			prg_prx_attach(mx,svrs,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"PRX_CONNECT"))
 			prg_prx_connect(mx,svrs,local_user);
 
@@ -2887,6 +3179,30 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 	}
 	if (mx[local_user].user_range==0) //Solo admin puede ejecutar...: (comandos de config del server)
 	{
+		if (fns.cmpfirstword(mx[local_user].cmdline,"BANNER"))
+			prg_banner(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"SNAME"))
+			prg_sname(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"SPORT"))
+			prg_sport(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"MPORT"))
+			prg_mport(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"MNAME"))
+			prg_mname(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"RESTART"))
+			prg_restart(mx,local_user);
+
+//		if (fns.cmpfirstword(mx[local_user].cmdline,"RESTART_MOTHER"))
+//			prg_restart_mother(mx,local_user);
+
+//		if (fns.cmpfirstword(mx[local_user].cmdline,"UPGRADE"))
+//			prg_upgrade(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"NET_SEND"))
 			prg_net_send(mx,local_user);
 
@@ -2917,6 +3233,9 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"KILL"))
 			prg_kill(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"KILLALL"))
+			prg_killall(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"PROMPT"))
 			prg_prompt(mx,local_user);
 
@@ -2931,15 +3250,35 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 			passed=TRUE;
 			return -1;
 	}
+	if (bye) return -15;
 	return 1;
 }
 
 
 void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 {
+//	mx[xlogon].cpu.i_a=nproto.senddata("compile        : compile, transform script on UMA.\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("exec           : exec excecutes UMA files.\n");
 	passed=TRUE;
+
+	char respf[12];
+	char resph[12];
+	BOOL brespf=0;
+	BOOL bresph=0;
+	strncpy(respf,fns.deparg(mx[xlogon].cmdline,"-f",TRUE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+	if (strcmp(respf,"-f"))
+		brespf=1;
+	if (strcmp(resph,"-h"))
+		bresph=1;
+	if (bresph)
+	{
+		mx[xlogon].cpu.i_a=nproto.senddata("Help of help\nHelp shows information about each command\n-f fast mode does not pause\n");
+		return;
+	}
 	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to unmanarc remote control server...\nlist of commands:\n\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("su             : change user.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("Console Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("-----------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("run            : run excecutes script on server.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cut            : cut data delimited by fields\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("strstr         : searchs one string into other string\n");
@@ -2953,8 +3292,6 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("echo           : Echo characters introduced by command line\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cls            : cls clear screen\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("freeenv        : prompt client for enviroment variable\n");
-//	mx[xlogon].cpu.i_a=nproto.senddata("compile        : compile, transform script on UMA.\n");
-//	mx[xlogon].cpu.i_a=nproto.senddata("exec           : exec excecutes UMA files.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("backcolor      : set background color\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("textcolor      : set text color\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("gotoxy         : set position of cursor\n");
@@ -2963,8 +3300,30 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("setenv         : set enviroment variable\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("MD5            : MD5 string introduced in command line\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("Sleep          : Wait [n] milliseconds\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("ls             : list files\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("WIN32 API Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("-------------------\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("msgbox         : Shows an AfxMessageBox on server\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("winexec        : run process in [n] mode\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("shutdown       : Shutdown PC(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("kill           : terminate PID(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("killall        : terminate Process by name(must be admin)\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("File Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("--------------\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("ls             : list files\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("mkdir          : Make a directory\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("rmdir          : Removes a directory\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cp             : Copy File in another location\n");
@@ -2973,11 +3332,45 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("ps             : List Proccesses\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cd             : change directory\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cat            : show file\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("msgbox         : Shows an AfxMessageBox on server\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("df             : Show Space free at this directory\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("User Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("--------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("who            : show information about users connected\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("su             : change user.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("passwd         : change's password of local user\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("Server Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("----------------\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("banner         : change server banner\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("sname          : change server name\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("sport          : change server port\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mport          : change mother port\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mname          : change mother name\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("restart        : restart server\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("restart_mother : restart connection with mother\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("upgrade        : upgrade server with mother server version\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("File Manipulation Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("---------------------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("touch          : Creates empty file.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fopen          : Open's file\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fgets          : Read a line from file handler\n");
@@ -2985,14 +3378,28 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("fgetc          : Read 1 byte from file and display\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fputc          : Put 1 byte to file\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fclose         : Closes a file.\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("Admin Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("---------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("log            : active/desactive logs(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("shutdown       : Shutdown PC(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("kill           : terminate PID(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prompt         : change prompt(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("mkuser         : creates another user (must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("rmuser         : remove user from database(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("Network Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("-----------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_lookup     : resolves name into dotted ip addr.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_opensocket : Open TCP raw connection to IP(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_set_timeout: Send data to TCP socket(must be admin)\n");
@@ -3001,16 +3408,39 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("net_receive    : Receive data from TCP socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_receivefrom: Receive data from UDP socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_closesocket: Close opened socket(must be admin)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("Reverse Proxy Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("-----------------------\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("prx_attach     : make tunnel to specified server without reverse\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prx_connect    : tunnel to specified server\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prx_who        : List tunnels\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prx_close      : Restart connection to tunnel\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
+	mx[xlogon].cpu.i_a=nproto.senddata("File-Transfer Commands:\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("-----------------------\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("downloadfrom   : download file from CTOOL fileserver\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("uploadto       : upload file to CTOOL fileserver\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("download       : direct download (warning: contains overhead)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("upload         : direct upload (warning: contains overhead)\n");
-	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	if (!brespf)
+	{
+		char momo[10];
+		mx[xlogon].cpu.i_a=nproto.senddata("Press enter to continue...");
+		mx[xlogon].cpu.i_a=nproto.getdnline(momo,10);
+		mx[xlogon].cpu.i_a=nproto.cls();
+	}
 	mx[xlogon].cpu.i_a=nproto.senddata("help           : show this help\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\nNOTE: some program's may not work if you don't have privilege.\n");
 }

@@ -114,6 +114,9 @@
 				RelativePath="compiler.cpp">
 			</File>
 			<File
+				RelativePath="connector.cpp">
+			</File>
+			<File
 				RelativePath="core_s.cpp">
 			</File>
 			<File
@@ -194,6 +197,9 @@
 			</File>
 			<File
 				RelativePath="compiler.h">
+			</File>
+			<File
+				RelativePath="connector.h">
 			</File>
 			<File
 				RelativePath="core_s.h">

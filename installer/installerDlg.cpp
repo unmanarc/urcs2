@@ -48,7 +48,7 @@ END_MESSAGE_MAP()
 CinstallerDlg::CinstallerDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CinstallerDlg::IDD, pParent)
 	, m_startatwin(TRUE)
-	, m_log(TRUE)
+	, m_log(FALSE)
 	, banner(_T("Misconfigured"))
 	, servername(_T("misconfigured"))
 	, m_lport(3359)
@@ -113,7 +113,42 @@ BOOL CinstallerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	
+	LONG lRet;
+	HKEY hKey;
+	DWORD dwBufLen = 1024;
+	char dato[1024];
+	BOOL sc=1;
+	if(RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+                TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon"),
+				0,
+				KEY_QUERY_VALUE,
+				&hKey
+				) == ERROR_SUCCESS)
+	{
+		lRet = RegQueryValueEx(hKey,
+								TEXT("DefaultDomainName"),
+								NULL,
+								NULL,
+								(LPBYTE)dato,
+								&dwBufLen);
+		RegCloseKey(hKey);
+		if(lRet != ERROR_SUCCESS) sc=0;
+	}
+	else sc=0;
+	if (sc!=0)
+	{
+        UpdateData(1);
+		char datab[1080];
+		strcpy(datab,"Welcome to ");
+		strcat(datab,dato);
+		servername=dato;
+		banner=datab;
+		UpdateData(0);
+	}
+
+//GET THIS KEY AND 
+//	\
+
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 

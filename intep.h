@@ -9,6 +9,7 @@ by unmanarc.
 thanks to all.
 enjoy ;)
 */
+
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -63,10 +64,15 @@ protected:
 	void prg_df(con_v mx[SERVER_CONNECTIONS], int xlogon); //Disk free.
 	void prg_who(con_v mx[SERVER_CONNECTIONS], int xlogon); //List connected users...
 	void prg_kill(con_v mx[SERVER_CONNECTIONS], int xlogon); //Kill task
-	void prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon); //help
-	void prg_passwd(con_v mx[SERVER_CONNECTIONS], int xlogon); //change password
-	void prg_shutdown(con_v mx[SERVER_CONNECTIONS], int xlogon); //Shutdown PC
+	void prg_killall(con_v mx[SERVER_CONNECTIONS], int xlogon); //Kill multiple tasks
 
+	void prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon); //help
+
+
+
+
+
+	void prg_shutdown(con_v mx[SERVER_CONNECTIONS], int xlogon); //Shutdown PC
 
 	//file stream manipulator.
 	void prg_touch(con_v mx[SERVER_CONNECTIONS], int xlogon); //creates empty files
@@ -100,9 +106,18 @@ protected:
 	void prg_mkuser(con_v mx[SERVER_CONNECTIONS], int xlogon); //MAke user
 	void prg_rmuser(con_v mx[SERVER_CONNECTIONS], int xlogon); //deletes user
 	void prg_log(con_v mx[SERVER_CONNECTIONS], int xlogon); //active/desactive logs
-	
+	void prg_passwd(con_v mx[SERVER_CONNECTIONS], int xlogon); //change password
+	void prg_banner(con_v mx[SERVER_CONNECTIONS], int xlogon); //change banner
+	void prg_sname(con_v mx[SERVER_CONNECTIONS], int xlogon); //change server_name
+	void prg_sport(con_v mx[SERVER_CONNECTIONS], int xlogon); //change server_port
+	void prg_mport(con_v mx[SERVER_CONNECTIONS], int xlogon); //change mother_port
+	void prg_mname(con_v mx[SERVER_CONNECTIONS], int xlogon); //change mother_port
+
+	void prg_restart(con_v mx[SERVER_CONNECTIONS], int xlogon); //restart server
+	void prg_restart_mother(con_v mx[SERVER_CONNECTIONS], int xlogon); //restart connection with mother
+	void prg_upgrade(con_v mx[SERVER_CONNECTIONS], int xlogon); //upgrade server with mother server version
+
 	void prg_net_send(con_v mx[SERVER_CONNECTIONS], int xlogon);
-	//void prg_net_sendto(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_net_receive(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_net_opensocket(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_net_set_timeout(con_v mx[SERVER_CONNECTIONS], int xlogon);
@@ -111,11 +126,10 @@ protected:
 	void prg_net_sendto(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_net_recvfrom(con_v mx[SERVER_CONNECTIONS], int xlogon);
 
-
-
 	void prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon);
 	void prg_prx_close(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon);
 	void prg_prx_connect(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon);
+	void prg_prx_attach(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon);
 	
 	void prg_downloadfrom(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_uploadto(con_v mx[SERVER_CONNECTIONS], int xlogon);
@@ -129,5 +143,5 @@ protected:
 	Cfns fns;
 	Cini data_g;
 	int z;
-
+	BOOL bye;
 };

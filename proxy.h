@@ -21,6 +21,7 @@ public:
 	Cproxy();
 	int start_proxy_instance(SOCKET client, SOCKET server);
 	SOCKET connectto();
+	int attach(char *ip, unsigned int port, SOCKET client);
 	SOCKET connecttoproxy();
 	BOOL pingproxy(SOCKET server);
 	int transfer();

@@ -98,7 +98,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 		time(&cnts[z].since); //assing time of connection
 		BOOL prx=1; // start proxy as TRUE
 
-   		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Received connection.","none");
+   		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Received connection.","none");
 
 		prx=asproxy; //if proxy do more rounds
 		BOOL cntw=FALSE;
@@ -130,26 +130,17 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				strcpy(svrs[gd].ip,cnts[z].ip_from);
 				svrs[gd].f=cnts[z].socket;
 				cnts[z].busy=0;
-				if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Proxy attached.","proxy");
+				if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Proxy attached.",svrs[gd].nameserver);
 				return -1;
 			}
 			//Connection started... we can send any data-. (sending banner)
 			protocol.cls();
-			protocol.setposxy(15,6);
 			protocol.setcolor(15);
-			protocol.senddata("URCS - Unmanarc Remote Control Server - 1.0.6");
-			//center banner.... (80)
-			protocol.setcolor(7);
-			size_t lugar=strlen(data_g.server_banner);
-			if (lugar>80) protocol.setposxy(1,8);
-			else
-			{
-                lugar=lugar/2;
-				lugar=40-lugar;
-				protocol.setposxy((int)lugar,8);
-			}
-			protocol.senddata(data_g.server_banner);
-//			protocol.senddata("\n");
+			protocol.senddatacenter(BANNER,7);
+			protocol.senddata("\n");
+			protocol.setdefaultcolor();
+			protocol.senddatacenter(data_g.server_banner,8);
+
 			int level; //privilege levels
 			if (data_g.installed) level=0; //privilege level on logon
 			else level=4; //privilege level on instalation
@@ -172,8 +163,16 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				if (level==3) 
 				{
 					//Logged on.
-					if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Logged on.",cnts[z].c_User);
+					if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Logged on.",cnts[z].c_User);
 					protocol.cls();
+					// print banner
+                   
+					protocol.setcolor(LIGHTGREEN);
+					protocol.senddata("    /\\                                    Unmanarc Remote Control Server - URCS\n");
+					protocol.senddata("  / | \\                                                    Trinity Glow - 1.0.7\n");
+					protocol.senddata("/   |  \\                                              http://urcs.unmanarc.com/\n");
+					protocol.senddata("---------                                 -------------------------------------\n");
+					protocol.setdefaultcolor();
 					Cintep intep; //make new interpreter
 					intep.start_intep(cnts,z,protocol.getkey());
                        // print command line take parameter and process them
@@ -189,6 +188,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 						if (b>=0) b=intep.run(cnts,svrs,z); //run command line
 						if (!intep.passed) protocol.senddata("\nCommand line error\n"); //when command cannot be excecuted show this
 					}
+					if (b==-15) return -15;
 					cont=0;
 				}
 				if (level==2) 
@@ -244,7 +244,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 			if(asproxy) 				//end of while... 
 				protocol.sendclose();
 		}
-		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE","Closed Connection.",cnts[z].c_User);
+		if (data_g.log_data) _log.logg(cnts[z].ip_from,"CORE ","Closed Connection.",cnts[z].c_User);
 		cnts[z].m_mem.release_mem();
 		cnts[z].busy=0;
 	}

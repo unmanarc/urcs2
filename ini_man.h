@@ -27,10 +27,12 @@ public:
 	s_proxyinf GetProxy();
 
 	//Datos del ini:
+	
 	char server_prompt[256];
 	char server_banner[256];
 	char server_name[256];
 	char mother_name[256];
+	
 	int mport;
 	int port;
 	BOOL log_data;
@@ -38,10 +40,10 @@ public:
 
 	//Datos del sistema:
 	
-	char lcname[512];
-	char lcfn[512];
-	char windir[512];
-	char sysdir[512];
+	char lcname[_MAX_PATH];
+	char lcfn[_MAX_PATH];
+	char windir[_MAX_PATH];
+	char sysdir[_MAX_PATH];
 	BOOL nt;
 	BOOL installed;
 	

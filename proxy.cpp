@@ -244,6 +244,64 @@ int Cproxy::start_proxy_instance(SOCKET client, SOCKET server)
 	if (f<=0) return -1;
 	return f;
 }
+int Cproxy::attach(char *ip, unsigned int port, SOCKET client)
+{
+	x=client;
+	Cini inim;
+	inim.LoadData();
+
+	struct hostent *hentry;
+	struct sockaddr_in Server_add;
+	WORD wVersionRequested;
+	WSADATA wsaData;
+	// Start Winsock
+	wVersionRequested = MAKEWORD( 1, 0 );
+	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
+	{
+
+		SOCKET Sock = socket( AF_INET, SOCK_STREAM, 0 ); //open socket
+		// Connect Server
+		if ((hentry = gethostbyname(ip)) == NULL)
+		{
+			//error: go out. Cannot resolve.
+			return 0;
+		}
+		else
+		{
+			// Make Socket
+			memset((char *)&Server_add, 0, sizeof(Server_add));
+			memcpy(&Server_add.sin_addr.s_addr, *(hentry->h_addr_list),sizeof(Server_add.sin_addr.s_addr));
+			//host are copied to Server_add
+			Server_add.sin_port = htons(port);
+			Server_add.sin_family = AF_INET;
+
+			// Connect Server
+			if( connect( Sock, (struct sockaddr *) &Server_add, sizeof( Server_add ) ) == 0 )
+			{
+				//do negot with server.
+				char key[32];
+				char buff[4096]; //buffer managment
+				int i; //error managment
+				memset(&buff,0,4096); //start buff
+				i=send(Sock,"iux",3,0); //Send initialization command.
+				if (i<=0) return -1; //if socket error, return -1 (socket error)
+				i=recv(Sock,buff,32,0); //receive 32bytes data of key.
+				if(i!=32) return -2; //if not receive 32 bytes of protocol, return error -2 (incompatible protocol or socket error)
+				else strncpy(key,buff,32); //if well, set 128bit key
+				if (!strcmp(key,"--------------------------------")) return -3;//Server full
+				y=Sock;
+				return transfer();
+			}
+			else
+			{
+				return -4;
+			}
+		}
+	}
+	else
+		return 0;
+}
+
 
 BOOL Cproxy::pingproxy(SOCKET server)
 {

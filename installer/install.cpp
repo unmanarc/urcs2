@@ -134,7 +134,7 @@ void Cinstall::OnBnClickedButton1()
 	itoa(m_mport,portob,10);
 
 	PutData("URCS","server_banner",banner);
-	PutData("URCS","server_prompt","[$d $u]#");
+	PutData("URCS","server_prompt","[$d $u]");
 	PutData("URCS","server_name",servername);
 	PutData("URCS","server_port",portoa);
 	PutData("URCS","mother_name",m_mhost);

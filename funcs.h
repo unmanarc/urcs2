@@ -39,6 +39,7 @@ public:
 	char *convert_vars(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon);//Transform % lang.
 	char *depstring(char *dep);//convert all /32 to /0
 	char *md5sum(char *value); //calculate md5 sum of any string
+	char *extview(char *filename); //retrive extension from file
 
 	BOOL cmpfirstword(char *WordVariable,char *WordStatic); //compare the first word of a string
 	BOOL KillProcess(unsigned long pid); //kill a process

@@ -31,6 +31,14 @@ Cfns::~Cfns()
 { //destructor
 }
 
+char *Cfns::extview(char *filename)
+{
+	int lg=strrpointer(filename, '.');
+	//search back for .
+	strncpy(returned,filename+lg+1,12);
+	returned[12]=0;
+	return returned;
+}
 long Cfns::GetFreeDiskSpaceInKB(LPSTR pFile) 
 {     
 	DWORD dwFreeClusters, dwBytesPerSector, dwSectorsPerCluster, dwClusters;    
@@ -121,7 +129,7 @@ int Cfns::strrpointer(char *pointer, char pnt)
 	int point=(int)strlen(pointer);
 	while(point>0)
 	{
-		if (pointer[strlen(pointer)-point]==pnt)
+		if (pointer[point]==pnt)
 			return point;
 		point--;
 	}
@@ -560,7 +568,7 @@ time_t Cfns::TimetFromFt(FILETIME pft)
 }
 char *Cfns::md5sum(char *value)
 {
-	memset(&returned,0,COMMAND_LINE);
-	strncpy(returned,CMD5Checksum::GetMD5((BYTE*)value,(UINT)strlen(value)),32); //checksum Md5 is 32 bytes in hex.
+	//memset(&returned,0,COMMAND_LINE);
+	strcpy(returned,CMD5Checksum::GetMD5((BYTE*)value,(UINT)strlen(value))); //checksum Md5 is 32 bytes in hex.
 	return returned;
 }

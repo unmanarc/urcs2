@@ -38,7 +38,7 @@ void Clog::logg(char *ip,char *module, char *data, char *username)
 	strcpy(date,ctime(&now));
 	fns.denter2(date);
 	formed=(char *)malloc(tot);
-	sprintf(formed,"[%s %s:%s@%s]: %s\n",date,module,username,ip,data);
+	sprintf(formed,"[%s %s:%-12s@%-15s]: %s\n",date,module,username,ip,data);
 	write_to_log(formed);
 }
 
