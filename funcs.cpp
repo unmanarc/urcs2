@@ -232,6 +232,21 @@ void Cfns::denter(char *crecpt)
 		ste--;
 	}
 }
+
+void Cfns::denter2(char *crecpt)
+{
+	int ste=(int)strlen(crecpt);
+	int summer=0;
+	for (int u=0;u<=ste;u++)
+	{
+		if (crecpt[u]!=10 && crecpt[u]!=13)
+		{
+			crecpt[summer]=crecpt[u];
+			summer++;
+		}
+	}
+}
+
 void Cfns::dep32(char *depu)
 {
 	char outstr[512]="";

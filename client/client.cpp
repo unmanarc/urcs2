@@ -120,6 +120,14 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 					{
 						system("cls");
 					}
+					if (tm==5001) //mode for request file
+					{
+						tm=cln.recvfile();
+					}
+					if (tm==5002) //mode for request file
+					{
+						tm=cln.sendfile();
+					}
 				}
 				cln.closesock();
             }

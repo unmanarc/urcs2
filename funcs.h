@@ -30,7 +30,8 @@ public:
 	int find32(char *strfnd, int pos32); //find the first (->) /32 /10 /13 or /0 (space, enter, return, null)
 	void filterstring(char *strfil); //remove the double /32 and upperstring.
 	void chrcat(char *strc, char add); // cat a byte to char*
-	void denter(char *crecpt); //removes /10 and /13
+	void denter(char *crecpt); //null-terminate string at first CR/LF
+	void denter2(char *crecpt); //removes CR/LF
 	void dep32(char *depu);//removes the /32 of a seq.
 	void renter(char *crecpt);//ad /13 to /10 expresions
 	char *deparg(char *depu, char *arg, BOOL nax); //return the arguments and depure

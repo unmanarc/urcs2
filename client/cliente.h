@@ -24,6 +24,9 @@ class CUclient
 public:
 	CUclient(); 
 	int connectto(char *ip, unsigned int port);
+	int sendfile();
+	int recvfile();
+
 	int receive(char *data);
 	int senddata(char *data);
 	int closesock();

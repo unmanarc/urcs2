@@ -19,6 +19,12 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+typedef struct
+{
+	short bt;
+	char data[4000];
+}ftrs;
+
 
 Cproxy::Cproxy()
 { //Constructor
@@ -98,6 +104,44 @@ int Cproxy::transfer()
 
 			if (l==4099) //server exit command
 				iscon=0;
+			if (l==5002) //server to client ftransfer
+			{
+				char fnd[512];
+				char intep[1];
+				ftrs ft;
+				if (recv(y,fnd,512,0)<=0) return -3;
+				if (send(x,fnd,512,0)<=0) return -2;
+				if (recv(y,intep,1,0)<=0) return -3;
+				if (send(x,intep,1,0)<=0) return -2;
+				if (intep[0]==1)
+				{
+					ft.bt=1;
+					while(ft.bt>0)
+					{
+						if (recv(x,(char *)&ft,sizeof(ft),0)<=0) return -2;
+						if (send(y,(char *)&ft,sizeof(ft),0)<=0) return -3;
+					}
+				}
+
+			}
+			if (l==5001) //server to client ftransfer
+			{
+				char fnd[512];
+				char intep[1];
+				ftrs ft;
+				if (recv(y,fnd,512,0)<=0) return -3;
+				if (send(x,fnd,512,0)<=0) return -2;
+				if (recv(x,intep,1,0)<=0) return -2;
+				if (send(y,intep,1,0)<=0) return -3;
+				if (intep[0]==0) break; //end's connection...
+				ft.bt=1;
+				while (ft.bt>0)
+				{
+					if (recv(y,(char *)&ft,sizeof(ft),0)<=0) return -3;
+					if (send(x,(char *)&ft,sizeof(ft),0)<=0) return -2;
+				}
+			}
+
 			if (l==4097 || l==4098) //command for passwords
 			{ //need to receive data from client and send to server...
                 int l2=1;

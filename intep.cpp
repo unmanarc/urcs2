@@ -37,6 +37,85 @@ Cintep::Cintep()
 Cintep::~Cintep()
 {
 }
+void Cintep::prg_upload(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	//upload file to IP
+	//upload -d [destip] -f [localfile] remotefile
+	passed=TRUE;
+
+	char respd[COMMAND_LINE];
+	char resph[12];
+
+	BOOL brespd=FALSE;
+	BOOL bresph=FALSE;
+
+	strncpy(respd,fns.deparg(mx[xlogon].cmdline,"-d",FALSE),COMMAND_LINE);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(respd,"-d"))
+		brespd=TRUE;
+	if (strcmp(resph,"-h"))
+		bresph=TRUE;
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph==TRUE)
+		mx[xlogon].cpu.i_a=nproto.senddata("UPLOAD INTERNAL UTILITY\nupload [-d destination_file] local_file\n");
+	else
+	{
+		if (!strcmp(mx[xlogon].cmdline+7,""))
+			mx[xlogon].cpu.i_a=nproto.senddata("not enought information...\n");
+		else
+		{
+			if (brespd==FALSE)
+				strcpy(respd,mx[xlogon].cmdline+7);
+			// All data well...
+            //Making new connection to: respd
+			mx[xlogon].cpu.i_a=nproto.senddata("Downloading file...");
+			int g=nproto.recvfile(mx[xlogon].cmdline+7,respd);
+			if (g>0) mx[xlogon].cpu.i_a=nproto.senddata("uploaded\n");
+			else mx[xlogon].cpu.i_a=nproto.senddata("Unknown error\n");
+		}
+	}
+}
+
+void Cintep::prg_download(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	
+	char respd[COMMAND_LINE];
+	char resph[12];
+
+	BOOL brespd=FALSE;
+	BOOL bresph=FALSE;
+
+	strncpy(respd,fns.deparg(mx[xlogon].cmdline,"-d",FALSE),COMMAND_LINE);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(respd,"-d"))
+		brespd=TRUE;
+	if (strcmp(resph,"-h"))
+		bresph=TRUE;
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph==TRUE)
+		mx[xlogon].cpu.i_a=nproto.senddata("DOWNLOAD INTERNAL UTILITY\ndownload [-d local_file] serverfile\nIf not file specified.. the name are same that serverfile\n");
+	else
+	{
+		if (!strcmp(mx[xlogon].cmdline+9,""))
+			mx[xlogon].cpu.i_a=nproto.senddata("not enought information...\n");
+		else
+		{
+			if (brespd==FALSE)
+				strcpy(respd,mx[xlogon].cmdline+9);
+			// All data well...
+            //Making new connection to: respd
+			mx[xlogon].cpu.i_a=nproto.senddata("Downloading file...");
+			int g=nproto.sendfile(respd,mx[xlogon].cmdline+9);
+			if (g>0) mx[xlogon].cpu.i_a=nproto.senddata("downloaded\n");
+			else mx[xlogon].cpu.i_a=nproto.senddata("Unknown error\n");
+		}
+	}
+}
 
 void Cintep::prg_downloadfrom(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
@@ -885,7 +964,7 @@ void Cintep::prg_cat(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	unsigned int nbytes = 256, bytesread;
 	if( (fh = _open(mx[xlogon].cmdline+4 , _O_RDONLY )) == -1 )
 	{
-		mx[xlogon].cpu.i_a=nproto.senddata("Cannot open local file on telnet server...");
+		mx[xlogon].cpu.i_a=nproto.senddata("ERROR: Cannot open local file on telnet server...\n");
 	}
 	else
 	{
@@ -1649,6 +1728,130 @@ void Cintep::prg_ls(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: LS - Li
 	}
 	//End!
 }
+void Cintep::prg_cut(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Sleep
+{	//modify enviroment variable to cut some field of data.
+	//cut [-v variable] [-p position] delimiter 
+	passed=TRUE;
+	//strstr search some ocurrence of any formated string into another formated string.
+	//strstr [-v variable] string
+	passed=TRUE;
+	char respp[12];
+	char respv[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),12);
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+4,"") || !strcmp(respv,"-v") || !strcmp(respp,"-p"))
+		mx[xlogon].cpu.i_a=nproto.senddata("cut [-p position] [-v variable] delimiter\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline);
+		//existence of var...
+		if (mx[xlogon].m_mem.getmemsize(respv)<=0) 
+		{
+			mx[xlogon].cpu.b_a=0; //variable specified does not exist, setting to 0 (not founded)
+		}
+		else
+		{
+			//search.
+			int pos=atoi(respp);
+			if (pos<0) pos=-pos;
+			char *pd;
+			char *ah;
+			char *bh;
+			ah=(char *)malloc(mx[xlogon].m_mem.getmemsize(respv));
+			bh=(char *)malloc(strlen(mx[xlogon].cmdline+4));
+			strcpy(ah,fns.convert(mx[xlogon].m_mem.getmem(respv),mx,xlogon));
+			strcpy(bh,fns.convert(mx[xlogon].cmdline+4,mx,xlogon));
+			pd=strstr(ah,bh);
+			if (pd!=NULL)
+			{
+				//delimiter founded...
+				int ab=0; //start of string...
+				int aa=(int)(pd - ah); //end... 
+				for (int e=0;e<pos;e++)
+				{
+					ab=(int)(pd - ah + 1); //start of string...
+					pd=strstr(pd+1,bh);
+					if (pd==NULL)
+					{
+						//out of string... setting to end of string...
+                        aa=strlen(ah); //end of string...
+					}
+					else
+					{
+						aa=(int)(pd - ah); //end... 
+					}
+				}
+				//aa contain last position for cut
+				//ab contain first position for cut
+				//calculate positions.
+				ah[aa]=0; //null-terminate on finish
+				int tptu=strlen(ah+ab);
+				int mrt=mx[xlogon].m_mem.putmem(respv,ah+ab,tptu);
+				if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+				if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+			}
+		}
+	}
+	
+}
+
+void Cintep::prg_strstr(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Sleep
+{ //strstr search some ocurrence of any formated string into another formated string.
+  //strstr [-v variable] string
+	passed=TRUE;
+	char respv[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+7,"") || !strcmp(respv,"-v"))
+		mx[xlogon].cpu.i_a=nproto.senddata("strstr [-v variable] string\nstrstr searchs string into other string\nuse jz & jnz for view\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline);
+		//existence of var...
+		if (mx[xlogon].m_mem.getmemsize(respv)<=0) 
+		{
+			mx[xlogon].cpu.b_a=0; //variable specified does not exist, setting to 0 (not founded)
+		}
+		else
+		{
+			//search.
+			char *pd;
+			char *ah;
+			char *bh;
+			ah=(char *)malloc(mx[xlogon].m_mem.getmemsize(respv));
+			bh=(char *)malloc(strlen(mx[xlogon].cmdline+7));
+			strcpy(ah,fns.convert(mx[xlogon].m_mem.getmem(respv),mx,xlogon));
+			strcpy(bh,fns.convert(mx[xlogon].cmdline+7,mx,xlogon));
+			pd=strstr(ah,bh);
+			if (pd==NULL) mx[xlogon].cpu.b_a=0; //if not founded, set to FALSE
+			else mx[xlogon].cpu.b_a=1; //if founded set to TRUE
+		}
+	}
+
+}
 
 void Cintep::prg_sleep(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Sleep
 {
@@ -1699,6 +1902,53 @@ void Cintep::start_intep(con_v mx[SERVER_CONNECTIONS], int local_user, char *new
 int	Cintep::printprompt(con_v mx[SERVER_CONNECTIONS], int local_user)
 { //print prompt specified in data_g and converted with "convert"
 	return nproto.senddata(fns.convert(data_g.server_prompt,mx,local_user));
+}
+void Cintep::prg_push(con_v mx[SERVER_CONNECTIONS], int xlogon) 
+{ //program push:  push all data ouputed by "senddata" to buffer
+  // push [0/1] \n1 start push\n0stop push
+	passed=TRUE;
+	fns.denter(mx[xlogon].cmdline);
+	if (!strcmp(mx[xlogon].cmdline+5,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("push [0/1] \n1 start push\n0 stop push\n");
+	else
+	{
+		int m=atoi(mx[xlogon].cmdline+5);
+		switch ( m )
+		{
+			case 1:
+				if (nproto.setpushmode(TRUE)<0) mx[xlogon].cpu.i_a=nproto.senddata("*ERROR: Cannot create temporary data\n");
+				break;
+			case 0:
+				if (nproto.setpushmode(FALSE)<0) mx[xlogon].cpu.i_a=nproto.senddata("*ERROR: Unknown error\n");
+				break;
+	        default:
+				mx[xlogon].cpu.i_a=nproto.senddata("*ERROR: select 1 or 0\n");
+		}
+	}
+}
+void Cintep::prg_flush(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	if (nproto.l_flush()<0) mx[xlogon].cpu.i_a=nproto.senddata("ERROR: Cannot flush data\n");
+}
+void Cintep::prg_pop(con_v mx[SERVER_CONNECTIONS], int xlogon) 
+{ //program push:  push all data ouputed by "senddata" to buffer
+  // push [enviroment_var]
+	passed=TRUE;
+	fns.denter(mx[xlogon].cmdline);
+	if (!strcmp(mx[xlogon].cmdline+4,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("push [enviroment_var]\n");
+	else
+	{
+		char dtrx[COMMAND_LINE];
+		int lnt=0;
+		strcpy(dtrx,nproto.l_pop(COMMAND_LINE));
+		fns.denter2(dtrx);
+		lnt=strlen(dtrx);
+		int mrt=mx[xlogon].m_mem.putmem(mx[xlogon].cmdline+4,dtrx,lnt);
+		if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+	}
 }
 void Cintep::prg_cmp(con_v mx[SERVER_CONNECTIONS], int xlogon) 
 {	//program cmp: compare two strings
@@ -1770,6 +2020,150 @@ void Cintep::prg_setenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: set
 		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
 	}
 }
+
+void Cintep::prg_add(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: add
+{
+	passed=TRUE;
+	char respv[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+4,"") || !strcmp(respv,"-v"))
+		mx[xlogon].cpu.i_a=nproto.senddata("add [-h] [-v var] add_integer\n-h help\n-v var to use... obligaroty\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline+4);
+
+		char *daaa;
+		char dbbb[40];
+		if (mx[xlogon].m_mem.getmemsize(respv)>0)
+		{
+			daaa = (char *)malloc( mx[xlogon].m_mem.getmemsize(respv) );
+			strcpy(daaa,mx[xlogon].m_mem.getmem(respv));
+		}
+		else
+		{
+			daaa = (char *)malloc( 5 );
+            strcpy(daaa,"0");
+		}
+		
+        __int64 aaa=_atoi64(daaa);
+		__int64 bbb=aaa+_atoi64(mx[xlogon].cmdline+4);
+        _i64toa(bbb,dbbb,10);
+		int mrt=mx[xlogon].m_mem.putmem(respv,dbbb,(int)strlen(dbbb));
+		if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+	}
+}
+
+void Cintep::prg_mul(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: multiply
+{
+	passed=TRUE;
+	char respv[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+4,"") || !strcmp(respv,"-v"))
+		mx[xlogon].cpu.i_a=nproto.senddata("add [-h] [-v var] multiply\n-h help\n-v var to use... obligaroty\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline+4);
+
+		char *daaa;
+		char dbbb[40];
+		if (mx[xlogon].m_mem.getmemsize(respv)>0)
+		{
+			daaa = (char *)malloc( mx[xlogon].m_mem.getmemsize(respv) );
+			strcpy(daaa,mx[xlogon].m_mem.getmem(respv));
+		}
+		else
+		{
+			daaa = (char *)malloc( 5 );
+            strcpy(daaa,"1");
+		}
+		
+        __int64 aaa=_atoi64(daaa);
+		__int64 bbb=_atoi64(mx[xlogon].cmdline+4)*aaa;
+        _i64toa(bbb,dbbb,10);
+		int mrt=mx[xlogon].m_mem.putmem(respv,dbbb,(int)strlen(dbbb));
+		if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+	}
+}
+
+void Cintep::prg_div(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: divide
+{
+	passed=TRUE;
+	char respv[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+4,"") || !strcmp(respv,"-v"))
+		mx[xlogon].cpu.i_a=nproto.senddata("add [-h] [-v var] divide_by\n-h help\n-v var to use... obligaroty\n");
+	else
+	{
+		//Do operations...
+		fns.denter(mx[xlogon].cmdline+4);
+
+		char *daaa;
+		char dbbb[40];
+		if (mx[xlogon].m_mem.getmemsize(respv)>0)
+		{
+			daaa = (char *)malloc( mx[xlogon].m_mem.getmemsize(respv) );
+			strcpy(daaa,mx[xlogon].m_mem.getmem(respv));
+		}
+		else
+		{
+			daaa = (char *)malloc( 5 );
+            strcpy(daaa,"1");
+		}
+		
+        __int64 aaa=_atoi64(daaa);
+		__int64 ccc=_atoi64(mx[xlogon].cmdline+4);
+		if (ccc==0) //cannot divide by zero.
+		{
+			mx[xlogon].cpu.i_a=nproto.senddata("Cannot divide by zero\n");
+		}
+		else
+		{
+			__int64 bbb=aaa/ccc;
+		    _i64toa(bbb,dbbb,10);
+			int mrt=mx[xlogon].m_mem.putmem(respv,dbbb,(int)strlen(dbbb));
+			if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+			if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+		}
+	}
+}
+
 
 void Cintep::prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
 {
@@ -1902,6 +2296,11 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 					}
 					islccmd=1;
 				}
+
+				if (fns.cmpfirstword(buffered,"NOP")) //No operator
+				{
+					islccmd=1;
+				}
 				if (!islccmd)
 				{
 					strncpy(mx[xlogon].cmdline,buffered,COMMAND_LINE);
@@ -1920,7 +2319,6 @@ void Cintep::prg_cls(con_v mx[SERVER_CONNECTIONS], int xlogon)
 int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int local_user)
 {
 	// run a command line, first, process command line.
-
 	_chdir(mx[local_user].localdir); // Change dir to user dir...
 	passed=0;
 	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==2 || mx[local_user].user_range==3 || mx[local_user].user_range==4) // usuario/admin/chat/otros puede ejecutar esto...
@@ -1950,19 +2348,36 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"SETENV"))
 			prg_setenv(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"CUT"))
+			prg_cut(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"CMP"))
 			prg_cmp(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"STRSTR"))
+			prg_strstr(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"PUSH"))
+			prg_push(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"FLUSH"))
+			prg_flush(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"POP"))
+			prg_pop(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"ADD"))
+			prg_add(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"MUL"))
+			prg_mul(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"DIV"))
+			prg_div(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"RUN"))
 			prg_run(mx,svrs,local_user);
 	}
-//	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==2) // usuario/admin/chat puede ejecutar esto...
-//	{
-/*		if (fns.cmpfirstword(recpt,"SENDMAIL"))
-			sendmail(d,recpt,dskq);
-		if (fns.cmpfirstword(recpt,"MAIL"))
-			mail(d,recpt,dskq);*/
-//	}
 	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==4) // usuario/admin/route puede ejecutar esto...
 	{
 		if (fns.cmpfirstword(mx[local_user].cmdline,"PRX_CONNECT"))
@@ -2048,6 +2463,11 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"DOWNLOADFROM"))
 			prg_downloadfrom(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"UPLOAD"))
+			prg_upload(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"DOWNLOAD"))
+			prg_download(mx,local_user);
 	}
 	if (mx[local_user].user_range==0) //Solo admin puede ejecutar...: (comandos de config del server)
 	{
@@ -2098,7 +2518,15 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	passed=TRUE;
 	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to unmanarc remote control server...\nlist of commands:\n\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("run            : run excecutes script on server.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("cut            : cut data delimited by fields\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("strstr         : searchs one string into other string\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("flush          : deletes buffer\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("push           : redirect output to buffer\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("pop            : get's buffer line and put them to enviroment\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cmp            : compares 2 formatted strings\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("add            : add/sub integer into other env_var\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("mul            : multiply integer into other env_var\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("div            : divide integer into other env_var\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("echo           : Echo characters introduced by command line\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cls            : cls clear screen\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("freeenv        : prompt client for enviroment variable\n");
@@ -2148,6 +2576,8 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("downloadfrom   : download file from CTOOL fileserver\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("uploadto       : upload file to CTOOL fileserver\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("download       : direct download (warning: contains overhead)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("upload         : direct upload (warning: contains overhead)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("help           : show this help\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\nNOTE: some program's may not work if you don't have privilege.\n");

@@ -11,6 +11,11 @@ enjoy ;)
 */
 #include "stdafx.h"
 #include "cliente.h"
+#include <fcntl.h>      /* Needed only for _O_RDWR definition */
+#include <io.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -36,6 +41,11 @@ CUclient::~CUclient()
 { //destructor
 	
 }
+typedef struct
+{
+	short bt;
+	char data[4000];
+}ftrs;
 
 void chrcpy(char *a, char *b, int c)
 {
@@ -77,6 +87,74 @@ int CUclient::senddata(char *data)
 	strcpy(bftsnd+4,data);
 	int tr=send(a,bftsnd,dlenght+4,0);
     return tr;
+}
+
+int CUclient::sendfile()
+{
+	char intep[1];
+	char rmf[512];
+	if (recv(a,rmf,512,0)<=0) return -3;
+	if (recv(a,intep,1,0)<=0) return -3;
+	if (intep[0]==1)
+	{
+        //remote host accept creation of files... openning.
+		ftrs ft;
+		int fh;
+		unsigned int nbytes = sizeof(ft.data), bytesread;
+		if( (fh = _open(rmf , _O_RDONLY | _O_BINARY )) != -1 ) 
+		{
+			while( ( bytesread = _read( fh, ft.data, nbytes ) ) > 0 )
+			{
+				ft.bt=(short)bytesread;
+				if (ft.bt>0) 
+				{
+					if (send(a,(char *)&ft,sizeof(ftrs),0)<=0) return -3;
+				}
+			}
+			_close( fh );
+			ft.bt=0;
+			if (send(a,(char *)&ft,sizeof(ftrs),0)<=0) return -3;
+			return 1;
+		}
+		ft.bt=0;
+		if (send(a,(char *)&ft,sizeof(ftrs),0)<=0) return -3;
+	}
+	return 1;
+}
+int CUclient::recvfile()
+{
+	ftrs ft;
+	char intep[1];
+	char rmf[512];
+	if (recv(a,rmf,512,0)<=0) return -3;
+	
+	//commencing  openning file
+	DWORD tot=0;
+	int fh;
+	if( (fh = _open(rmf, _O_WRONLY | _O_CREAT | _O_BINARY )) != -1 )
+	{
+		intep[0]=1;
+		if (send(a,intep,1,0)<=0) return -3; //ok opened
+		do
+		{
+			if (recv(a,(char *)&ft,sizeof(ft),0)<=0) return -3;
+			tot=tot+ft.bt;
+			_write(fh,&ft.data,ft.bt);
+		}
+		while (ft.bt > 0);
+		int jh=_close( fh );
+
+		if (tot==0) 
+			DeleteFile(rmf);
+
+		return 1;
+	}
+	else 
+	{
+		intep[0]=0;
+		if (send(a,intep,1,0)<=0) return -3;
+		return -2; //cannot open localfile
+	}
 }
 
 int CUclient::receive(char *data)

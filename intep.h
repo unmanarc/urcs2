@@ -68,11 +68,21 @@ protected:
 	void prg_fgetc(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_fputc(con_v mx[SERVER_CONNECTIONS], int xlogon);
 
-	void prg_cmp(con_v mx[SERVER_CONNECTIONS], int xlogon);
+	void prg_cmp(con_v mx[SERVER_CONNECTIONS], int xlogon); //compare 2 strings.
+	void prg_add(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: add
+	void prg_div(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: divide
+	void prg_mul(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: multiply
 
+
+	void prg_flush(con_v mx[SERVER_CONNECTIONS], int xlogon);
+	void prg_push(con_v mx[SERVER_CONNECTIONS], int xlogon);
+	void prg_pop(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: removes entry from vars.
 	void prg_setenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: set enviroment var.
 	void prg_promptenv(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: Prompt and save to enviroment var.
+	void prg_cut(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: modify enviroment variable to cut some field of data.
+	void prg_strstr(con_v mx[SERVER_CONNECTIONS], int xlogon); //program: //strstr search some ocurrence of any formated string into another formated string.
+
 
 	void prg_prompt(con_v mx[SERVER_CONNECTIONS], int xlogon); //Change prompt
 	void prg_mkuser(con_v mx[SERVER_CONNECTIONS], int xlogon); //MAke user
@@ -92,6 +102,11 @@ protected:
 	
 	void prg_downloadfrom(con_v mx[SERVER_CONNECTIONS], int xlogon);
 	void prg_uploadto(con_v mx[SERVER_CONNECTIONS], int xlogon);
+	void prg_download(con_v mx[SERVER_CONNECTIONS], int xlogon);
+	void prg_upload(con_v mx[SERVER_CONNECTIONS], int xlogon);
+
+
+
 
 	Cproto nproto;
 	Cfns fns;

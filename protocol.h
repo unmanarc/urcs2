@@ -32,7 +32,15 @@ public:
 	BOOL prx;
 	char nameserver[512];
 
+	int setpushmode(BOOL pshmode);
+	char *l_pop(int max);
+	int l_flush();
+
 	//For server rutines:
+	int sendfile(char *remotefilename, char *localfilename);
+	int recvfile(char *remotefilename, char *localfilename);
+
+
 	int senddata(char *data); //Send NULL-TERMINATED string to socket
 	int getdline(char *line); //Get 10-13 terminated line.
 	int getdnline(char *line,int max); //Get 10-13 terminated line with maximum
@@ -42,13 +50,16 @@ public:
 	int getproxyline();
 	int GetBlock(void *p, int len);
 	int cls();
-	//For proxy tunneling:
-    
 
 	~Cproto();
 
 protected:
+	int l_push(char *data);
 	SOCKET x;
 	char key[32];
+	FILE *tempfile;
+	BOOL pushmode;
+	fpos_t w_pos;
+	fpos_t r_pos;
 
 };
