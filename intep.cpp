@@ -171,7 +171,7 @@ void Cintep::prg_prx_who(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS]
 			}
 		}
 	}
-	mx[xlogon].cpu.i_a=nproto.senddata("* denotes that proxy is in use.");
+	mx[xlogon].cpu.i_a=nproto.senddata("* denotes that proxy is in use.\n");
 }
 void Cintep::prg_prx_close(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
 {
