@@ -107,7 +107,18 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 		{
 			//review if proxy
 			if (asproxy)
-				while(protocol.getproxyline()<0); //wait for proxyline
+			{
+				int rew=-1;
+				while(rew<0) //wait for proxyline
+				{
+					rew=protocol.getproxyline();
+					if (rew==-1)
+					{
+						cnts[z].busy=0;
+						return 0; //if connection are down go out.
+					}
+				}
+			}
 			if (protocol.prx) //is proxy...
 			{
 				int gd=findpipefree(); //find for free proxy...
@@ -119,7 +130,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				return -1;
 			}
 				//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.3 build 3 - MDP\n");
+			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.3 build 4 - MDP\n");
 			protocol.senddata(data_g.server_banner);
 			protocol.senddata("\n");
 			int level; //privilege levels

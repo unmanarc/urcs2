@@ -81,8 +81,9 @@ int Cproto::getproxyline()
 {
 	char med[80];
 	int p=recv(x,med,80,0);
+	if (p<=0) return -1;
 	if (!strcmp(med,"CONNECT")) return 1;
-	else return -1;
+	else return -2;
 }
 
 int Cproto::getdline(char *line)
