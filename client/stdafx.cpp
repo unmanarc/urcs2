@@ -1,0 +1,19 @@
+/*
+All CopyRights Reserved.
+Created by unmanarc.com. emailme to: unma@unmanarc.com
+this source are under GNU/GPL (General Public Licence)
+http://urcs.unmanarc.com/
+http://urcs.sourceforge.net/
+
+by unmanarc.
+thanks to all.
+enjoy ;)
+*/
+// stdafx.cpp : source file that includes just the standard includes
+// client.pch will be the pre-compiled header
+// stdafx.obj will contain the pre-compiled type information
+
+#include "stdafx.h"
+
+// TODO: reference any additional headers you need in STDAFX.H
+// and not in this file
