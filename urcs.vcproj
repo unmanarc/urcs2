@@ -111,7 +111,25 @@
 				RelativePath="Server.cpp">
 			</File>
 			<File
+				RelativePath="compiler.cpp">
+			</File>
+			<File
 				RelativePath="core_s.cpp">
+			</File>
+			<File
+				RelativePath="executer.cpp">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCLCompilerTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCLCompilerTool"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="file_transfer.cpp">
@@ -175,7 +193,25 @@
 				RelativePath="Server.h">
 			</File>
 			<File
+				RelativePath="compiler.h">
+			</File>
+			<File
 				RelativePath="core_s.h">
+			</File>
+			<File
+				RelativePath="executer.h">
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="TRUE">
+					<Tool
+						Name="VCCustomBuildTool"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="file_transfer.h">

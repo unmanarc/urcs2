@@ -85,6 +85,62 @@ SOCKET Cproxy::connectto()
 	else
 		return 0;
 }
+
+SOCKET Cproxy::connecttoproxy()
+{
+	Cini inim;
+	inim.LoadData();
+	s_proxyinf localproxy; 
+	localproxy=inim.GetProxy(); //get windows proxy data.
+	if (!localproxy.have_proxy) return 0; //not proxy defined.
+	struct hostent *hentry;
+	struct sockaddr_in Server_add;
+	WORD wVersionRequested;
+	WSADATA wsaData;
+	// Start Winsock
+	wVersionRequested = MAKEWORD( 1, 0 );
+	if( WSAStartup( wVersionRequested, &wsaData ) == 0 )
+	{
+		SOCKET Sock = socket( AF_INET, SOCK_STREAM, 0 ); //open socket
+		// Connect to proxy...
+		if ((hentry = gethostbyname(localproxy.proxy)) == NULL)
+		{
+			//error: go out. Cannot resolve.
+			return 0;
+		}
+		else
+		{
+			// Make Socket
+			memset((char *)&Server_add, 0, sizeof(Server_add));
+			memcpy(&Server_add.sin_addr.s_addr, *(hentry->h_addr_list),sizeof(Server_add.sin_addr.s_addr));
+			//host are copied to Server_add
+			Server_add.sin_port = htons(localproxy.port);
+			Server_add.sin_family = AF_INET;
+			// Connect Server
+			if( connect( Sock, (struct sockaddr *) &Server_add, sizeof( Server_add ) ) == 0 )
+			{
+				char negot[1024];
+				sprintf(negot,"CONNECT %s:%u HTTP/1.0\n",inim.mother_name,inim.port);
+				send(Sock,negot,(int)strlen(negot),0);//negotiate with proxy... 
+				//do negot with server.
+				char init_d[4];
+				strcpy(init_d,"ipx");
+				send(Sock,init_d,3,0);
+				send(Sock,inim.server_name,512,0);
+				// A Server has my data... now, all information that i'll receive is a prx
+				// Start server with proxy mode (non close admited)
+				return Sock;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	else
+		return 0;
+}
+
 int Cproxy::transfer()
 {
 	//transfer first initial data from/to client server

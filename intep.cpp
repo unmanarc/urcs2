@@ -22,6 +22,7 @@ enjoy ;)
 #include "file_transfer.h"
 #include "malloc.h"
 #include "scripting.h"
+#include "compiler.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -77,7 +78,6 @@ void Cintep::prg_upload(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		}
 	}
 }
-
 void Cintep::prg_download(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
 	passed=TRUE;
@@ -116,7 +116,6 @@ void Cintep::prg_download(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		}
 	}
 }
-
 void Cintep::prg_downloadfrom(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
 	passed=TRUE;
@@ -380,7 +379,7 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 
 	while (!pass_d)
 	{
-		mx[xlogon].cpu.i_a=nproto.senddata("Do you want to active log for your server? [Y,N]: ");
+		mx[xlogon].cpu.i_a=nproto.senddata("Do you want to active log for your server? [Y,N][N]: ");
 		nproto.getdnline(dtm,COMMAND_LINE);
 		if (dtm[0]=='Y' || dtm[0]=='y')
 		{
@@ -388,11 +387,8 @@ void Cintep::firstinstall(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		}
 		else
 		{
-			if (dtm[0]=='N' || dtm[0]=='n')
-			{
-	            dolog=FALSE;
-				pass_d=TRUE;
-			}
+			pass_d=TRUE;
+            dolog=FALSE;
 		}
 	}
 
@@ -519,6 +515,148 @@ void Cintep::prg_net_lookup(con_v mx[SERVER_CONNECTIONS], int xlogon)
 }
 
 
+void Cintep::prg_net_sendto(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	//net_sendto [-h] [-s] [-p ticket] [-i ip] [-t port] [-l long] message.
+	passed=TRUE;
+	
+	char exlusive[COMMAND_LINE];
+	char respp[12];
+	char respl[12];
+	char respt[12];
+	char respi[45];
+	char resph[12];
+	char resps[12];
+
+	BOOL bresph=0;
+	BOOL bresps=0;
+
+	strncpy(resps,fns.deparg(mx[xlogon].cmdline,"-s",FALSE),12);
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),12);
+	strncpy(respl,fns.deparg(mx[xlogon].cmdline,"-l",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+	strncpy(respt,fns.deparg(mx[xlogon].cmdline,"-t",FALSE),12);
+	strncpy(respi,fns.deparg(mx[xlogon].cmdline,"-i",FALSE),45);
+
+    if (strcmp(resph,"-h"))		bresph=1;
+	if (strcmp(resps,"-s"))		bresps=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+strlen("NET_SENDTO "),"")	|| !strcmp(respi,"-i") || !strcmp(respt,"-t") || !strcmp(respp,"-p"))
+		mx[xlogon].cpu.i_a=nproto.senddata("net_sendto [-h] [-s] [-p ticket] [-i ip] [-t port] [-l long] [data].\n-s silent\n-i ip of host\n-t port to send\n-l use this long\n\r-p Ticket (Socket Number)\n[Data] Formmated data such as: Hola$sComo$sEstas\n");
+	else
+	{
+		strncpy(exlusive,mx[xlogon].cmdline+strlen("NET_SENDTO "),COMMAND_LINE);
+		//Do operations...
+		SOCKET p=atoi(respp);
+		char mfs[COMMAND_LINE];
+		int r=-1;
+		size_t lng=0;
+		memset(&mfs,0,COMMAND_LINE);
+		strncpy(mfs,fns.convert(exlusive,mx, xlogon),COMMAND_LINE);
+		if (strcmp(respl,"-l"))
+			lng=atoi(respl);
+		else
+			lng=strlen(mfs);
+		//create struct...
+		struct sockaddr_in server;
+		server.sin_family = AF_INET;
+		server.sin_port = htons(atoi(respt));
+		server.sin_addr.s_addr = inet_addr( respi );
+		r=sendto(p,mfs,(int)lng,0,(const struct sockaddr *)&server,sizeof(struct sockaddr_in));
+//		r=send(p,mfs,(int)lng,0);
+		if (r<=0)
+		{
+			mx[xlogon].cpu.i_a=nproto.senddata("Can't send data\n");
+			mx[xlogon].cpu.b_a=0;
+		}
+		else
+		{
+			if (!bresps)
+			{
+				char ds[80];
+				sprintf(ds,"%u bytes sendedto succesfull to socket %u\n",r,p);
+				mx[xlogon].cpu.i_a=nproto.senddata(ds);
+				mx[xlogon].cpu.b_a=1;
+			}
+			else
+			{
+				mx[xlogon].cpu.b_a=1;
+			}
+		}
+	}
+}
+
+void Cintep::prg_net_recvfrom(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	//net_receivefrom [-h] [-p ticket] [-i ip] [-t port] [-l long]
+	passed=TRUE;
+
+	char respp[12];
+	char respr[12];
+	char respl[12];
+	char resph[12];
+	char respt[12];
+	char respi[45];
+
+	BOOL bresph=0;
+	BOOL brespp=0;
+	BOOL brespr=0;
+
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),12);
+	strncpy(respl,fns.deparg(mx[xlogon].cmdline,"-l",FALSE),12);
+	strncpy(respr,fns.deparg(mx[xlogon].cmdline,"-r",TRUE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+	strncpy(respt,fns.deparg(mx[xlogon].cmdline,"-t",FALSE),12);
+	strncpy(respi,fns.deparg(mx[xlogon].cmdline,"-i",FALSE),45);
+
+	if (strcmp(respr,"-r"))
+		brespr=1;
+	if (strcmp(resph,"-h"))
+		bresph=1;
+	if (!strcmp(respp,"-p"))
+		brespp=1;
+	fns.denter(mx[xlogon].cmdline);
+	if (bresph || brespp || !strcmp(respi,"-i") || !strcmp(respt,"-t"))
+		mx[xlogon].cpu.i_a=nproto.senddata("net_receivefrom [-r] [-l long] [-i ip] [-t port] -p ticket\n-l use this long (default is 4096)\n-p Ticket (Socket Number)\n-r Show in hexadecimal\n");
+	else
+	{
+		//Do operations...
+		SOCKET p=atoi(respp);
+		char mfs[4096];
+		int r=-1;
+		int lng=0;
+		memset(&mfs,0,4096);
+		if (strcmp(respl,"-l"))
+			lng=atoi(respl);
+		else
+			lng=4096;
+
+		struct sockaddr_in server;
+		server.sin_family = AF_INET;
+		server.sin_port = htons(atoi(respt));
+		server.sin_addr.s_addr = inet_addr( respi );
+		int ln=sizeof(server);
+		r=recvfrom(p,mfs,lng,0,(struct sockaddr *)&server,&ln);
+		//r=recv(p,mfs,lng,0);
+		if (r<=0)
+			mx[xlogon].cpu.i_a=nproto.senddata("Can't Receive data\n");
+		else
+		{
+			char ds[100]="";
+			sprintf(ds,"%u bytes received succesfully from socket %u:\n",r,p);
+			mx[xlogon].cpu.i_a=nproto.senddata(ds);
+			if (!brespr)
+				mx[xlogon].cpu.i_a=nproto.senddata(mfs);
+			else
+				mx[xlogon].cpu.i_a=nproto.senddatahex(mfs,r);
+			mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
+		}
+	}
+
+}
 
 void Cintep::prg_net_send(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
@@ -541,7 +679,7 @@ void Cintep::prg_net_send(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	fns.denter(mx[xlogon].cmdline);
 
 
-	if (bresph || !strcmp(mx[xlogon].cmdline+strlen("NET_SEND "),""))
+	if (bresph || !strcmp(mx[xlogon].cmdline+strlen("NET_SEND "),"") || !strcmp(respp,"-p"))
 		mx[xlogon].cpu.i_a=nproto.senddata("net_send [-l long] -p ticket [data]\n-l use this long\n\r-p Ticket (Socket Number)\n[Data] Formmated data such as: Hola$sComo$sEstas\n");
 	else
 	{
@@ -621,25 +759,7 @@ void Cintep::prg_net_receive(con_v mx[SERVER_CONNECTIONS], int xlogon)
 			if (!brespr)
 				mx[xlogon].cpu.i_a=nproto.senddata(mfs);
 			else
-			{
-				//send byte to byte 23 hex's by line.
-				mx[xlogon].cpu.i_a=nproto.senddata("---------HEXADECIMAL VIEW-------------------------------------------\n");
-				int ha=0;
-				for (int h=0; h<r; h++)
-				{
-					if (ha==23)
-					{
-						mx[xlogon].cpu.i_a=nproto.senddata("\n");
-						ha=0;
-					}
-					else ha++;
-					char snd[80];
-					sprintf(snd,"%02X ",mfs[h]);
-					mx[xlogon].cpu.i_a=nproto.senddata(snd);
-				}
-				mx[xlogon].cpu.i_a=nproto.senddata("\n---------NORMAL VIEW------------------------------------------------\n");
-				mx[xlogon].cpu.i_a=nproto.senddata(mfs);
-			}
+				mx[xlogon].cpu.i_a=nproto.senddatahex(mfs,r);
 			mx[xlogon].cpu.i_a=nproto.senddata("\n\r");
 		}
 	}
@@ -765,16 +885,15 @@ void Cintep::prg_net_opensocket(con_v mx[SERVER_CONNECTIONS], int xlogon)
 				Server_add.sin_addr.s_addr = inet_addr( exlusive );
 				SOCKET Sock = socket( AF_INET, SOCK_DGRAM, 0 );
 
-
 				char socke[80];
 				itoa((int)Sock,socke,10);
 				mx[xlogon].cpu.i_a=nproto.senddata("Socket Number: ");
 				mx[xlogon].cpu.i_a=nproto.senddata(socke);
-				mx[xlogon].cpu.i_a=nproto.senddata("\nWarning: We don't verify the status of host.\nPacket's will be sended in siege mode.\n\n\nWarning 2: There is no functions actually that manage sendto and recvfrom\nclosesocket inmediatly.\n");
+				mx[xlogon].cpu.i_a=nproto.senddata("\nWarning: We don't verify the status of host.\nPacket's will be sended in siege mode.\n");
 			}
 			else
 			{
-				mx[xlogon].cpu.i_a=nproto.senddata("Can´t initialize socket.\n");
+				mx[xlogon].cpu.i_a=nproto.senddata("Can´t initialize sockets\n");
 			}
 		}
 	}
@@ -1308,7 +1427,47 @@ void Cintep::prg_exec(con_v mx[SERVER_CONNECTIONS], int xlogon)
 		}
 	}
 }
+void Cintep::prg_touch(con_v mx[SERVER_CONNECTIONS], int xlogon) //creates empty files
+{
+	passed=TRUE;
+	// Format: touch [-h] [-v] filename
+	// file manipulation errors are saved to: cpu.b_a
+	char resph[12];
+	char respv[12];
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+	strncpy(respv,fns.deparg(mx[xlogon].cmdline,"-v",TRUE),12);
+	if (strcmp(resph,"-h"))
+	{	//showhelp
+		mx[xlogon].cpu.i_a=nproto.senddata("Format:  touch [-h] [-v] filename\nCreates empty file\n-v Verbose mode.\n");
+	}
+	else
+	{
+		fns.denter(mx[xlogon].cmdline);
+		if (strcmp(respv,"-v")) mx[xlogon].cpu.i_a=nproto.senddata("Creating file: ");
+		FILE *fw;
+		char pathoffile[_MAX_PATH];
+		strncpy(pathoffile,fns.convert(mx[xlogon].cmdline+6,mx,xlogon),_MAX_PATH);
+		if(!strcmp(pathoffile,""))
+		{
+			mx[xlogon].cpu.b_a=0; //not created
+			if (strcmp(respv,"-v")) mx[xlogon].cpu.i_a=nproto.senddata("Error: Enter a file-name\n");
+			return; 
+		}
+		if (( fw = fopen( pathoffile, "a+"))==NULL)
+		{
+			mx[xlogon].cpu.b_a=0; //not created
+			if (strcmp(respv,"-v")) mx[xlogon].cpu.i_a=nproto.senddata("Cannot open file\n");
+		}
+		else
+		{
+			mx[xlogon].cpu.b_a=1; //not created
+			if (strcmp(respv,"-v")) mx[xlogon].cpu.i_a=nproto.senddata("Created.\n");
+			fclose(fw);
+		} //end of oppened
 
+	} //end of no-help
+
+}
 void Cintep::prg_fopen(con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
 	passed=TRUE;
@@ -1488,25 +1647,7 @@ void Cintep::prg_fgets(con_v mx[SERVER_CONNECTIONS], int xlogon)
 					if (!brespr)
 						mx[xlogon].cpu.i_a=nproto.senddata(mfs);
 					else
-					{
-						//send byte to byte 23 hex's by line.
-						mx[xlogon].cpu.i_a=nproto.senddata("---------HEXADECIMAL VIEW-------------------------------------------\n");
-						int ha=0;
-						for (int h=0; h<r; h++)
-						{
-							if (ha==23)
-							{
-								mx[xlogon].cpu.i_a=nproto.senddata("\n");
-								ha=0;
-							}
-							else ha++;
-							char snd[80];
-							sprintf(snd,"%02X ",mfs[h]);
-							mx[xlogon].cpu.i_a=nproto.senddata(snd);
-						}
-						mx[xlogon].cpu.i_a=nproto.senddata("\n---------NORMAL VIEW------------------------------------------------\n");
-						mx[xlogon].cpu.i_a=nproto.senddata(mfs);
-					}
+						mx[xlogon].cpu.i_a=nproto.senddatahex(mfs,r);
 				}
 				else 
 					mx[xlogon].cpu.i_a=nproto.senddata("#EOF#\n");
@@ -1804,7 +1945,7 @@ void Cintep::prg_cut(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Sleep
 			{
 				//delimiter founded...
 				int ab=0; //start of string...
-				int aa=(int)(pd - ah); //end... 
+				size_t aa=(int)(pd - ah); //end... 
 				for (int e=0;e<pos;e++)
 				{
 					ab=(int)(pd - ah + 1); //start of string...
@@ -1823,7 +1964,7 @@ void Cintep::prg_cut(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Sleep
 				//ab contain first position for cut
 				//calculate positions.
 				ah[aa]=0; //null-terminate on finish
-				int tptu=strlen(ah+ab);
+				int tptu=(int)strlen(ah+ab);
 				int mrt=mx[xlogon].m_mem.putmem(respv,ah+ab,tptu);
 				if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
 				if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
@@ -1914,6 +2055,21 @@ void Cintep::prg_echo(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	mx[xlogon].cpu.i_a=nproto.senddata(fns.convert(mx[xlogon].cmdline+5,mx, xlogon));
 }
 
+void Cintep::prg_textcolor(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{ // Internal Program Echo
+	passed=TRUE;
+	int color=atoi(mx[xlogon].cmdline+10);
+	if (color>16 || color<0 || !strcmp(mx[xlogon].cmdline+10,"") ) mx[xlogon].cpu.i_a=nproto.senddata("textcolor [0-16]\n");
+	else mx[xlogon].cpu.i_a=nproto.setcolor((unsigned short)color);
+}
+void Cintep::prg_backcolor(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{ // Internal Program Echo
+	passed=TRUE;
+	int color=atoi(mx[xlogon].cmdline+10);
+	if (color>16 || color<0 || !strcmp(mx[xlogon].cmdline+10,"")) mx[xlogon].cpu.i_a=nproto.senddata("backcolor [0-16]\n");
+	else mx[xlogon].cpu.i_a=nproto.setbackground((unsigned short)color);
+}
+
 void Cintep::prg_msgbox(con_v mx[SERVER_CONNECTIONS], int xlogon)
 { // Internal Program AFXMESSAGEBOX - MSGBOX
 	passed=TRUE;
@@ -1995,11 +2151,11 @@ void Cintep::prg_pop(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	else
 	{
 		char dtrx[COMMAND_LINE];
-		int lnt=0;
+		size_t lnt=0;
 		strcpy(dtrx,nproto.l_pop(COMMAND_LINE));
 		fns.denter2(dtrx);
 		lnt=strlen(dtrx);
-		int mrt=mx[xlogon].m_mem.putmem(mx[xlogon].cmdline+4,dtrx,lnt);
+		int mrt=mx[xlogon].m_mem.putmem(mx[xlogon].cmdline+4,dtrx,(int)lnt);
 		if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
 		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
 	}
@@ -2218,6 +2374,81 @@ void Cintep::prg_div(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: divide
 	}
 }
 
+void Cintep::prg_gotoxy(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: gotoxy
+{
+	passed=TRUE;
+	char respx[12];
+	char respy[12];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respx,fns.deparg(mx[xlogon].cmdline,"-x",FALSE),12);
+	strncpy(respy,fns.deparg(mx[xlogon].cmdline,"-y",FALSE),12);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph)
+		mx[xlogon].cpu.i_a=nproto.senddata("gotoxy [-h] [-x 1-25] [-y 1-80]\n");
+	else
+	{
+		//Do operations...
+		if (!strcmp(respx,"-x")) strcpy(respx,"1");
+		if (!strcmp(respy,"-y")) strcpy(respx,"1");
+		int x=atoi(respx);
+		int y=atoi(respy);
+		if (x>80 || x<1 || y>25 || y<1 )	 //out of range.
+		{
+			mx[xlogon].cpu.i_a=nproto.senddata("gotoxy [-h] [-x 1-25] [-y 1-80]\n");
+		}
+		else
+		{
+			mx[xlogon].cpu.i_a=nproto.setposxy(x,y);
+		}
+	}
+}
+
+void Cintep::prg_su(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: change user (su)
+{
+	passed=TRUE;
+	char respu[512];
+	char respp[512];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respu,fns.deparg(mx[xlogon].cmdline,"-u",FALSE),512);
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),512);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))
+		bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(respu,"-u") || !strcmp(respp,"-p") )
+		mx[xlogon].cpu.i_a=nproto.senddata("su [-h] [-u username] [-p password]\n");
+	else
+	{
+		//Do operations...
+		if(data_g.ValidateUser(respu,respp)>=0) 
+		{ //Validated with database
+			strcpy(mx[xlogon].c_User,respu);
+			strcpy(mx[xlogon].c_Pass,respp);
+			mx[xlogon].user_range=data_g.ValidateUser(respu,respp);
+			mx[xlogon].cpu.b_a=1;
+		}
+		else
+		{
+			mx[xlogon].cpu.b_a=0;
+		}
+	}
+}
+
 
 void Cintep::prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
 {
@@ -2239,7 +2470,17 @@ void Cintep::prg_freeenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Pr
 		if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
 	}
 }
-
+void Cintep::prg_promptenvpass(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
+{
+	passed=TRUE;
+	//promptenvpass for data... and put to var.
+	char nmd[COMMAND_LINE];
+	nproto.getdnpass(nmd,COMMAND_LINE);
+	fns.denter(nmd);
+    int mrt= mx[xlogon].m_mem.putmem(mx[xlogon].cmdline+14,nmd,(int)strlen(nmd));
+	if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
+	if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
+}
 void Cintep::prg_promptenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: Prompt and save to enviroment var.
 {
 	passed=TRUE;
@@ -2251,6 +2492,49 @@ void Cintep::prg_promptenv(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: 
 	if (mrt==-1) mx[xlogon].cpu.i_a=nproto.senddata("not enought memory\n");
 	if (mrt==-2) mx[xlogon].cpu.i_a=nproto.senddata("not slots available\n");
 }
+void Cintep::prg_compile(con_v mx[SERVER_CONNECTIONS], int xlogon) //program: compile scripts into UMA
+{
+	//compile [-p pagesize] [-o output file] script_file
+	passed=TRUE;
+	char respp[COMMAND_LINE];
+	char respo[COMMAND_LINE];
+	char resph[12];
+
+	BOOL bresph=0;
+
+	strncpy(respp,fns.deparg(mx[xlogon].cmdline,"-p",FALSE),COMMAND_LINE);
+	strncpy(respo,fns.deparg(mx[xlogon].cmdline,"-o",FALSE),COMMAND_LINE);
+	strncpy(resph,fns.deparg(mx[xlogon].cmdline,"-h",TRUE),12);
+
+	if (strcmp(resph,"-h"))	bresph=1;
+
+	fns.denter(mx[xlogon].cmdline);
+
+	if (bresph || !strcmp(mx[xlogon].cmdline+8,""))
+		mx[xlogon].cpu.i_a=nproto.senddata("compile [-p pagesize] [-o output file] script_file\n");
+	else
+	{
+
+		if (!strcmp(respo,"-o"))
+		{
+			//output file dont specified.
+			strncpy(respo,mx[xlogon].cmdline+8,COMMAND_LINE-4);
+			strcat(respo,".uma");
+		}
+		if (!strcmp(respp,"-p"))
+		{
+			//output file dont specified.
+			strcpy(respp,"32768");
+		}
+		int pagesize=atoi(respp);
+		//Do operations...
+		Ccompiler compiler;
+		compiler.compile(mx[xlogon].cmdline+8,respo,pagesize);
+		
+	}
+
+}
+
 void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], int xlogon)
 {
 	passed=TRUE;
@@ -2280,6 +2564,7 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 				mx[xlogon].cpu.i_a=nproto.senddata("Jump error: Cannot jump to main\n");
 				return;
 			}
+			int called_from=0;
 			//script openned. interpreting in a loop 
 			while (1)
 			{
@@ -2291,12 +2576,22 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 				// process for verify script commands...
 				BOOL islccmd=0;
 				if (buffered[0]==':') islccmd=1; //is label, don't excecute.
+				if (buffered[0]==';') islccmd=1; //is comment.
 				if (fns.cmpfirstword(buffered,"EXITSCRIPT"))
 				{
 					islccmd=1;
 					scripting.close_script();
 					strncpy(mx[xlogon].cmdline,"",COMMAND_LINE);
 					return; //end scripting.
+				}
+				if (fns.cmpfirstword(buffered,"RET")) //RET returns to line where be called.
+				{
+					if (!scripting.setlinepos(called_from))
+					{
+						mx[xlogon].cpu.i_a=nproto.senddata("Jump error: error while setting line\n");
+						return;
+					}
+					islccmd=1;
 				}
 				if (fns.cmpfirstword(buffered,"JNZ")) //Jump if not Zero
 				{
@@ -2335,6 +2630,23 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 					}
 					islccmd=1;
 				}
+				if (fns.cmpfirstword(buffered,"CALL")) //Call for label
+				{
+					//call allow you to jump to specified position and return when "ret" function is called.
+					called_from=scripting.getlinepos();
+					int toline=scripting.search_label(buffered+5);
+					if (toline<0)
+					{
+						mx[xlogon].cpu.i_a=nproto.senddata("call error: cannot find line to jump\n");
+						return;
+					}
+					if (!scripting.setlinepos(toline))
+					{
+						mx[xlogon].cpu.i_a=nproto.senddata("call error: error while setting line\n");
+						return;
+					}
+					islccmd=1;
+				}
 				if (fns.cmpfirstword(buffered,"JMP")) //Jump
 				{
 					int toline=scripting.search_label(buffered+4);
@@ -2350,7 +2662,6 @@ void Cintep::prg_run(con_v mx[SERVER_CONNECTIONS],ers_svr svrs[SERVER_SLOTS], in
 					}
 					islccmd=1;
 				}
-
 				if (fns.cmpfirstword(buffered,"NOP")) //No operator
 				{
 					islccmd=1;
@@ -2370,6 +2681,22 @@ void Cintep::prg_cls(con_v mx[SERVER_CONNECTIONS], int xlogon)
 	passed=TRUE;
 	mx[xlogon].cpu.i_a=nproto.cls();
 }
+void Cintep::prg_clreol(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.clreol();
+}
+void Cintep::prg_delline(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.delline();
+}
+void Cintep::prg_insline(con_v mx[SERVER_CONNECTIONS], int xlogon)
+{
+	passed=TRUE;
+	mx[xlogon].cpu.i_a=nproto.insline();
+}
+
 int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int local_user)
 {
 	// run a command line, first, process command line.
@@ -2385,11 +2712,23 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"SLEEP"))
 			prg_sleep(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"SU"))
+			prg_su(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"MD5"))
 			prg_md5(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"CLS"))
 			prg_cls(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"CLREOL"))
+			prg_clreol(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"DELLINE"))
+			prg_delline(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"INSLINE"))
+			prg_insline(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"ECHO"))
 			prg_echo(mx,local_user);
@@ -2397,8 +2736,20 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"PROMPTENV"))
 			prg_promptenv(mx,local_user);
 
+		if (fns.cmpfirstword(mx[local_user].cmdline,"PROMPTENVPASS"))
+			prg_promptenvpass(mx,local_user);
+
 		if (fns.cmpfirstword(mx[local_user].cmdline,"FREEENV"))
 			prg_freeenv(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"GOTOXY"))
+			prg_gotoxy(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"BACKCOLOR"))
+			prg_backcolor(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"TEXTCOLOR"))
+			prg_textcolor(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"SETENV"))
 			prg_setenv(mx,local_user);
@@ -2432,6 +2783,10 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"RUN"))
 			prg_run(mx,svrs,local_user);
+
+//		if (fns.cmpfirstword(mx[local_user].cmdline,"EXEC"))
+//			prg_exec2(mx,local_user);
+
 	}
 	if (mx[local_user].user_range==0 || mx[local_user].user_range==1 || mx[local_user].user_range==4) // usuario/admin/route puede ejecutar esto...
 	{
@@ -2451,6 +2806,9 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"LS"))
 			prg_ls(mx,local_user);
+
+//		if (fns.cmpfirstword(mx[local_user].cmdline,"COMPILE"))
+//			prg_compile(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"WINEXEC"))
 			prg_exec(mx,local_user);
@@ -2481,6 +2839,9 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"CAT"))
 			prg_cat(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"TOUCH"))
+			prg_touch(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"FOPEN"))
 			prg_fopen(mx,local_user);
@@ -2529,8 +2890,11 @@ int Cintep::run(con_v mx[SERVER_CONNECTIONS], ers_svr svrs[SERVER_SLOTS],int loc
 		if (fns.cmpfirstword(mx[local_user].cmdline,"NET_SEND"))
 			prg_net_send(mx,local_user);
 
-		//if (fns.cmpfirstword(mx[local_user].cmdline,"NET_SENDTO"))
-		//	prg_net_sendto(mx,local_user);
+		if (fns.cmpfirstword(mx[local_user].cmdline,"NET_SENDTO"))
+			prg_net_sendto(mx,local_user);
+
+		if (fns.cmpfirstword(mx[local_user].cmdline,"NET_RECEIVEFROM"))
+			prg_net_recvfrom(mx,local_user);
 
 		if (fns.cmpfirstword(mx[local_user].cmdline,"NET_RECEIVE"))
 			prg_net_receive(mx,local_user);
@@ -2575,6 +2939,7 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 {
 	passed=TRUE;
 	mx[xlogon].cpu.i_a=nproto.senddata("Welcome to unmanarc remote control server...\nlist of commands:\n\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("su             : change user.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("run            : run excecutes script on server.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cut            : cut data delimited by fields\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("strstr         : searchs one string into other string\n");
@@ -2588,6 +2953,12 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("echo           : Echo characters introduced by command line\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("cls            : cls clear screen\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("freeenv        : prompt client for enviroment variable\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("compile        : compile, transform script on UMA.\n");
+//	mx[xlogon].cpu.i_a=nproto.senddata("exec           : exec excecutes UMA files.\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("backcolor      : set background color\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("textcolor      : set text color\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("gotoxy         : set position of cursor\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("promptenvpass  : prompt client for enviroment variable with *\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("promptenv      : prompt client for enviroment variable\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("setenv         : set enviroment variable\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("MD5            : MD5 string introduced in command line\n");
@@ -2607,6 +2978,7 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("who            : show information about users connected\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("passwd         : change's password of local user\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("touch          : Creates empty file.\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fopen          : Open's file\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fgets          : Read a line from file handler\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("fputs          : Puts $ formated data at file\n");
@@ -2625,8 +2997,9 @@ void Cintep::prg_lscmd(con_v mx[SERVER_CONNECTIONS], int xlogon) //help
 	mx[xlogon].cpu.i_a=nproto.senddata("net_opensocket : Open TCP raw connection to IP(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_set_timeout: Send data to TCP socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_send       : Send data to TCP socket(must be admin)\n");
-//	mx[xlogon].cpu.i_a=nproto.senddata("net_sendto     : Send data to UDP socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_sendto     : Send data to UDP socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_receive    : Receive data from TCP socket(must be admin)\n");
+	mx[xlogon].cpu.i_a=nproto.senddata("net_receivefrom: Receive data from UDP socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("net_closesocket: Close opened socket(must be admin)\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("\n");
 	mx[xlogon].cpu.i_a=nproto.senddata("prx_connect    : tunnel to specified server\n");

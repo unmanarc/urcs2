@@ -40,11 +40,14 @@ Cproto::~Cproto()
 { //destructor
 	
 }
-void chrcpy(char *a, char *b, int c)
+void chrcpy(BYTE *a, char *b, int c)
 {
 	for (int p=0;p<c;p++)
         a[p]=b[p];
+	//end with \0
+	a[c]=0;
 }
+
 int Cproto::l_flush()
 {
 	if (pushmode)
@@ -90,6 +93,52 @@ int Cproto::l_push(char *data)
 	return 0;
 }
 
+int Cproto::senddatahex(char *data, int lenght) //send as maximum 4094 bytes of data.
+{
+	__int64 offset=0;
+	int dtr;
+	char variab[80]={(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)197,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)197,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)10,(char)13,(char)0 };
+	char variac[80]={(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)193,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)193,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)196,(char)10,(char)13,(char)0 };
+
+	dtr=senddata(" Offset  \xB3  0  1  2  3  4  5  6  7   8  9  A  B  C  D  E  F \xB3            data\n");
+	//senddata("---------+-------------------------------------------------+----------------\n");
+	dtr=senddata(variab);
+	while(offset<lenght)
+	{
+        BYTE prcl[17];
+		char datah[85];
+		memset(&datah,0,83);
+		memset(&prcl,0,17);
+		if (offset+16>lenght)	chrcpy(prcl,data+offset,lenght-offset);
+		else chrcpy(prcl,data+offset,16);
+		char datab[20];
+		sprintf(datah," %08X\xB3",offset);
+		for (int i=0;i<16;i++)
+		{
+			memset(&datab,0,20);
+			sprintf(datab," %02X",prcl[i]);
+			strcat(datah,datab);
+			if(i==7) strcat(datah," ");
+		}
+		strcat(datah," \xB3");
+		//convert to "safe bytes" and catem
+		size_t h=strlen(datah);
+		for (int i=0;i<16;i++)
+		{
+			if (offset+i<=lenght)
+			{
+				if(prcl[i]==0 || prcl[i]==7 ||prcl[i]==8 ||prcl[i]==9 ||prcl[i]==10 || prcl[i]==13 ||prcl[i]==26 ) 	prcl[i]='.';
+				datah[h+i]=prcl[i];
+			}
+		}
+		prcl[16]=0;
+		strcat(datah,"\n");
+        offset=offset+16;
+		dtr=senddata(datah);
+	}
+	dtr=senddata(variac);
+	return dtr;
+}
 int Cproto::senddata(char *data) //send as maximum 4094 bytes of data.
 {
 	int dlenght=(int)strlen(data); //
@@ -105,7 +154,7 @@ int Cproto::senddata(char *data) //send as maximum 4094 bytes of data.
 	}
 	else
 	{ //pushmode
-		dsnd=strlen(data);
+		dsnd=(int)strlen(data);
 		l_push(data);
 	}
 	if (dsnd<=0) return -1;
@@ -246,9 +295,69 @@ int Cproto::getdline(char *line)
 	strcpy(line,"");
 	return 0;
 }
+int Cproto::setposxy(int posx, int posy)
+{
+	if (posx>80 || posx<0 || posy>25 || posy<0 ) return -2; //out of range.
+	int dlenght=posy-1; 
+	dlenght=dlenght*80;
+	dlenght=dlenght+6000+posx-1; //6000-8000
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
+
+int Cproto::setcolor(unsigned short color)
+{
+	int dlenght=5003+color; //5003-5019
+	if (dlenght>5019) return -2; //color not supported. 
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
+int Cproto::setbackground(unsigned short color)
+{
+	int dlenght=5020+color; //5020-5036
+	if (dlenght>5036) return -2; //color not supported. 
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
 int Cproto::cls()
 {
 	int dlenght=5000; //5000 is a command to cls
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
+int Cproto::clreol(void)//Borrar hasta el final de línea
+{
+	int dlenght=5037; //5000 is a command to cls
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
+int Cproto::delline(void)//Eliminar la línea actual
+{
+	int dlenght=5038; //5000 is a command to cls
+	char bftsnd[4]; //buffer to send
+	memcpy(&bftsnd,&dlenght,4);
+	int y=send(x,bftsnd,4,0);//Send command for cls
+	if (y<=0) return -1; //error sending data
+	return 0;
+}
+int Cproto::insline(void)//Insertar una nueva línea
+{
+	int dlenght=5039; //5000 is a command to cls
 	char bftsnd[4]; //buffer to send
 	memcpy(&bftsnd,&dlenght,4);
 	int y=send(x,bftsnd,4,0);//Send command for cls

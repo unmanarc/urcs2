@@ -39,13 +39,21 @@ public:
 	//For server rutines:
 	int sendfile(char *remotefilename, char *localfilename);
 	int recvfile(char *remotefilename, char *localfilename);
-
-
+	int senddatahex(char *data, int lenght); //send as maximum 4094 bytes of data hex.
 	int senddata(char *data); //Send NULL-TERMINATED string to socket
 	int getdline(char *line); //Get 10-13 terminated line.
 	int getdnline(char *line,int max); //Get 10-13 terminated line with maximum
 	int getdnpass(char *line,int max); //Get 10-13 terminated pass with maximum
 	int getnchar(char *chr, int chars); //Get n characters from host
+	int setcolor(unsigned short color);
+	int setbackground(unsigned short color);
+	int setposxy(int posx, int posy);
+	int clreol(void);//Borrar hasta el final de línea
+	int delline(void);//Eliminar la línea actual
+	int insline(void);//Insertar una nueva línea
+
+
+
 	int receive(char *data);
 	int getproxyline();
 	int GetBlock(void *p, int len);

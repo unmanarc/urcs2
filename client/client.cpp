@@ -13,6 +13,7 @@ enjoy ;)
 #include "client.h"
 #include "cliente.h"
 #include "conio.h"
+#include "Consola.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -118,7 +119,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 					}
 					if (tm==5000) //mode for request line
 					{
-						system("cls");
+						clrscr();
 					}
 					if (tm==5001) //mode for request file
 					{
@@ -127,6 +128,34 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 					if (tm==5002) //mode for request file
 					{
 						tm=cln.sendfile();
+					}
+					// from 5003-5019 (text color)
+					if (tm<5020 && tm>5002)
+					{
+						//color...
+						int color=tm-5003;
+						textcolor(color);
+					}
+					// from 5020-5036 (text color)
+					if (tm>=5020 && tm<=5036)
+					{
+						//color...
+						int color=tm-5020;
+						textbackground(color);
+					}
+					if (tm==5037) //Borrar hasta el final de línea
+						clreol();
+					if (tm==5038) //Eliminar la línea actual
+						delline();
+					if (tm==5039) //Insertar una nueva línea
+						insline();
+					//from 6000 to 8000 is for x,y...
+					if (tm>=6000 && tm<=8000) //poner posición XY
+					{
+						tm=tm-6000;
+						int y=tm/80;
+						int x=tm%80;
+						gotoxy(x+1,y+1);
 					}
 				}
 				cln.closesock();

@@ -16,13 +16,34 @@ enjoy ;)
 
 #pragma once
 
+#define EXEC_VERSION 1
+
 #define VIRTUAL_DATA 256
-#define SERVER_SLOTS 150
-#define SERVER_CONNECTIONS 150
+#define SERVER_SLOTS 256
+#define SERVER_CONNECTIONS 256
 #define FILE_SLOTS 256
 #define COMMAND_LINE 4092
 
 #define HASH_DEFAULT ""
+
+
+//MACROS para texcolor, textbackground, etc.
+#define BLACK		 0	//NEGRO
+#define BLUE		 1	//AZUL MARINO
+#define GREEN		 2	//VERDE PERICO
+#define CYAN		 3	//VERDE CLARO
+#define RED			 4	//ROJO
+#define MAGENTA		 5	//MORADO O VIOLETA
+#define BROWN		 6	//CAFÉ
+#define LIGHTGRAY	 7	//GRIS CLARO
+#define DARKGRAY	 8	//GRIS OBSCURO
+#define LIGHTBLUE	 9	//AZUL MARINO CLARO
+#define LIGHTGREEN	 10	//VERDE CLARO
+#define LIGHTCYAN	 11	//AZUL CLARO
+#define LIGHTRED	 12	//ROJO CLARO
+#define LIGHTMAGENTA 13	//ROSA MEXICANO
+#define YELLOW		 14	//AMARILLO
+#define WHITE		 15	//BLANCO
 
 
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
@@ -55,6 +76,13 @@ typedef struct vcpu
 	int i_d;
 	char data[VIRTUAL_DATA];
 }virtual_cpu;
+
+typedef struct proxyinf
+{
+	char proxy[512];
+	int port;
+	BOOL have_proxy;
+}s_proxyinf;
 
 typedef struct conections
 {

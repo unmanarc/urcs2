@@ -13,8 +13,8 @@ enjoy ;)
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define MEMORY_SLOTS 128
-#define MEMORY_FOR_USER 32768
+#define MEMORY_SLOTS 128 //128 memory slots
+#define MEMORY_FOR_USER 65536 //65Kb of memory for each user
 
 
 typedef struct memory

@@ -132,6 +132,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="Consola.h">
+			</File>
+			<File
 				RelativePath="Resource.h">
 			</File>
 			<File
@@ -151,6 +154,9 @@
 				RelativePath="client.rc">
 			</File>
 		</Filter>
+		<File
+			RelativePath="Consola.lib">
+		</File>
 		<File
 			RelativePath="ReadMe.txt">
 		</File>

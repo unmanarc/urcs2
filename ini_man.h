@@ -24,7 +24,7 @@ public:
 	int ValidateUser(char *username, char *pass); //with MD5 inifile validation
 	BOOL PutKey( HKEY base, LPCSTR path, LPCSTR valuename, LPCSTR value );
 	void CopyMeToWinDir();
-
+	s_proxyinf GetProxy();
 
 	//Datos del ini:
 	char server_prompt[256];

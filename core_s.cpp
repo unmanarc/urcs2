@@ -134,9 +134,22 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				return -1;
 			}
 			//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.5b2 DRCS\n");
+			protocol.cls();
+			protocol.setposxy(15,6);
+			protocol.setcolor(15);
+			protocol.senddata("URCS - Unmanarc Remote Control Server - 1.0.6");
+			//center banner.... (80)
+			protocol.setcolor(7);
+			size_t lugar=strlen(data_g.server_banner);
+			if (lugar>80) protocol.setposxy(1,8);
+			else
+			{
+                lugar=lugar/2;
+				lugar=40-lugar;
+				protocol.setposxy((int)lugar,8);
+			}
 			protocol.senddata(data_g.server_banner);
-			protocol.senddata("\n");
+//			protocol.senddata("\n");
 			int level; //privilege levels
 			if (data_g.installed) level=0; //privilege level on logon
 			else level=4; //privilege level on instalation
@@ -183,30 +196,46 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 					//compare data with database.
 					if (data_g.ValidateUser(cnts[z].c_User,cnts[z].c_Pass)>=0) 
 					{ //Validated with database
-						protocol.senddata("\nlogged on.\n");
+						protocol.setposxy(1,18);
+						protocol.delline();
+						protocol.setposxy(1,25);
+						protocol.senddata("logged on.\n");
 						cnts[z].user_range=data_g.ValidateUser(cnts[z].c_User,cnts[z].c_Pass);
                         level++;			
 					}
 					else
 					{
-						protocol.senddata("\nBad username or password.\n");
+						protocol.setposxy(1,18);
+						protocol.delline();
+						protocol.setposxy(1,25);
+						protocol.senddata("Bad username or password.");
 						level=0;
 					}
 				}
 				if (level==1) 
 				{
 					//request for password:
-					protocol.senddata("password:");
+					protocol.setposxy(1,18);
+					protocol.delline();
+					protocol.setposxy(1,25);
+					protocol.senddata("password: ");
+					protocol.setcolor(15);
 					if(protocol.getdnpass(cnts[z].c_Pass,512)<0)
 						cont=0;
+					protocol.setcolor(7);
 					fnc.denter(cnts[z].c_Pass);
                     level++;
 				}
 				if (level==0) 
 				{
 					//request for user:
-					protocol.senddata("username:"); //request
+					protocol.setposxy(1,18);
+					protocol.delline();
+					protocol.setposxy(1,25);
+					protocol.senddata("username: "); //request
+					protocol.setcolor(15);
 					if(protocol.getdnline(cnts[z].c_User,512)<0) cont=0; //request line
+					protocol.setcolor(7);
 					fnc.denter(cnts[z].c_User); //filter
 					if(!strcmp(cnts[z].c_User,"exit")) cont=0; //command for terminate
                     level++;
