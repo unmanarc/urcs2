@@ -134,7 +134,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				return -1;
 			}
 			//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.5b1 PILIN\n");
+			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.5b2 DRCS\n");
 			protocol.senddata(data_g.server_banner);
 			protocol.senddata("\n");
 			int level; //privilege levels

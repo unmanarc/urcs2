@@ -115,7 +115,7 @@ void Cini::LoadData()
 	GetPrivateProfileString("URCS","server_prompt","#",server_prompt,256,ini_filename);
 	GetPrivateProfileString("URCS","server_name","default-misconfigured",server_name,256,ini_filename);
 	GetPrivateProfileString("URCS","server_port","3359",lport,10,ini_filename);
-	GetPrivateProfileString("URCS","mother_name","proxy.unmanarc.com",mother_name,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
+	GetPrivateProfileString("URCS","mother_name","200.16.194.34",mother_name,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
 	GetPrivateProfileString("URCS","mother_port","3359",mother_port,256,ini_filename); //this 000.000.000.000 you can change it directly from PXE.
 	GetPrivateProfileString("URCS","server_crypted","N",lcrypt,2,ini_filename);
 	GetPrivateProfileString("URCS","log_data","Y",ld,2,ini_filename);
