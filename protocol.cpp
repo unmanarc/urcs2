@@ -35,7 +35,7 @@ void chrcpy(char *a, char *b, int c)
 
 int Cproto::senddata(char *data) //send as maximum 4094 bytes of data.
 {
-	int dlenght=strlen(data); //
+	int dlenght=(int)strlen(data); //
 	int dsnd=0;
 	char bftsnd[4096]; //buffer to send
 	if ( dlenght>4092 ) return -1;		//data is too large...

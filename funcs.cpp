@@ -21,13 +21,65 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
-char returned[512];
+
+
 
 Cfns::Cfns()
 { //Constructor
 }
 Cfns::~Cfns()
 { //destructor
+}
+
+long Cfns::GetFreeDiskSpaceInKB(LPSTR pFile) 
+{     
+	DWORD dwFreeClusters, dwBytesPerSector, dwSectorsPerCluster, dwClusters;    
+	char RootName[MAX_PATH];     
+	LPSTR ptmp;    //required arg     
+	ULARGE_INTEGER ulA, ulB, ulFreeBytes;  
+	GetFullPathName(pFile, sizeof(RootName), RootName, &ptmp);
+	if (RootName[0] == '\\' && RootName[1] == '\\') 
+	{  
+		ptmp = &RootName[2]; 
+		while (*ptmp && (*ptmp != '\\')) 
+		{     
+			ptmp++; 
+		} 
+		if (*ptmp) 
+		{     // advance past the third backslash     
+			ptmp++; 
+		}     
+	} 
+	else 
+	{ 
+		// path must be drv:\path 
+		ptmp = RootName;     
+	}      
+	while (*ptmp && (*ptmp != '\\')) 
+	{ 
+		ptmp++;     
+	}     // found a backslash ?     
+	if (*ptmp) 
+	{ // skip it and insert null ptmp++; 
+		*ptmp = '\0';     
+	}
+	HINSTANCE h = LoadLibraryA("kernel32.dll");     
+	if (h) 
+	{ 
+		typedef BOOL (WINAPI *MyFunc)(LPCSTR RootName, PULARGE_INTEGER pulA, PULARGE_INTEGER pulB, PULARGE_INTEGER pulFreeBytes); 
+		MyFunc pfnGetDiskFreeSpaceEx = (MyFunc)GetProcAddress(h, "GetDiskFreeSpaceExA"); 
+		FreeLibrary(h); 
+		if (pfnGetDiskFreeSpaceEx) 
+		{     
+			if (!pfnGetDiskFreeSpaceEx(RootName, &ulA, &ulB, &ulFreeBytes)) 
+				return -1;     
+			return (long)(ulFreeBytes.QuadPart / 1024); 
+		}     
+	}      
+	if (!GetDiskFreeSpace(RootName, &dwSectorsPerCluster, &dwBytesPerSector, &dwFreeClusters, &dwClusters)) 
+		return (-1);     
+
+	return(MulDiv(dwSectorsPerCluster * dwBytesPerSector,    dwFreeClusters,    1024)); 
 }
 
 BOOL Cfns::KillProcess(unsigned long pid)
@@ -56,14 +108,12 @@ BOOL Cfns::KillProcess(unsigned long pid)
 
 int Cfns::strpointer(char *pointer, char pnt)
 {
-	int point=(int)strlen(pointer);
-	while(point>0)
+	size_t point=(int)strlen(pointer);
+	for(size_t po=0;po<point;po++)
 	{
-		if (pointer[point]==pnt)
-			return point;
-		point--;
+		if (pointer[po]==pnt) return (int)po;
 	}
-	return 0;
+	return -1;
 }
 
 int Cfns::strrpointer(char *pointer, char pnt)
@@ -233,67 +283,143 @@ char *Cfns::deparg(char *depu, char *arg, BOOL nax)
 	// si nax es verdadero, pero 
 	char *pdest;
 	int  result, r, mw;
-	char res[512];
-	char newln[512];
+	char res[COMMAND_LINE];
+	char newln[COMMAND_LINE];
 	char rspnl[5];
-	strcpy(rspnl,arg);
 
+	strncpy(rspnl,arg,5);
 	pdest = strstr( depu, arg );
 	if (pdest==NULL)
 	{
-		strcpy(returned,rspnl);
+		strncpy(returned,rspnl,COMMAND_LINE); //devolver el argumento si no encuentra nada...
 		return returned;
 	}
-
 	result = (int) (pdest - depu) ;
-
 	// result contain a position of arg...
-	strcpy(res,depu+result);
+	strncpy(res,depu+result,COMMAND_LINE);
 	if (nax)
 		r=find32(res,1);
 	else
 		r=find32(res,2);
-
 	res[r-1]=0;
 	mw=(int)strlen(res);
-
 	//now res contain an argument... will now dep original string
 	//depuring res:
-	strcpy(res, res+strlen(arg)+1);
+	strncpy(res,res+strlen(arg)+1,COMMAND_LINE);
 	//depuring depu:
-	strcpy(newln,depu);
+	strncpy(newln,depu,COMMAND_LINE);
 	newln[result]=0;
 	strcat(newln,depu+result+mw+1);
 	strcpy(depu,newln);
-
-	strcpy(returned,res);
+	strncpy(returned,res,COMMAND_LINE);
+	return returned;
+}
+char *Cfns::convert_vars(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon)//Transform % lang.
+{
+	char regret[COMMAND_LINE];
+	memset(&regret,0,COMMAND_LINE);
+	int w=(int)strlen(instr);
+	int i=0;
+	int o=0;
+	while (i<w && o<COMMAND_LINE)
+	{
+		if (instr[i]=='#')
+		{
+			//Convert the format to string
+			i++;
+			if (instr[i]=='#')
+			{
+				regret[o]='#';
+				o++;
+			}
+			else
+			{
+				//have var into... replacing...
+				char nameofvar[128];
+				int pty=0;
+				strncpy(nameofvar,instr+i,128);
+				pty=strpointer(nameofvar,'#');
+				if (pty<0) //not end founded... releasing...
+				{
+					i--;
+					if (instr[i]!=10 && instr[i]!=13)
+					{
+						regret[o]=instr[i];
+						o++;
+					}
+				}
+				else
+				{
+					int tmr=0;
+					int u;
+					i=i+pty;
+					nameofvar[pty]=0;
+					//searching for this name...
+					tmr=mx[xlogon].m_mem.getmemsize(nameofvar); //get size
+					u=tmr+o;
+					if (tmr>0 && u<COMMAND_LINE)
+					{
+						strncat(regret,mx[xlogon].m_mem.getmem(nameofvar),tmr);
+						o=u;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (instr[i]!=10 && instr[i]!=13)
+			{
+				regret[o]=instr[i];
+				o++;
+			}
+		}
+		i++;
+	}
+	regret[o]=0;
+	strncpy(returned,regret,COMMAND_LINE);
 	return returned;
 }
 
 char *Cfns::convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon)
 {
-	char regret[4096];
-	memset(&regret,0,4096);
-	int w=strlen(instr);
+
+	char regret[COMMAND_LINE];
+	memset(&regret,0,COMMAND_LINE);
+	int w=(int)strlen(instr);
 	int i=0;
-	while (i<w)
+	int o=0;
+	while (i<w && o<COMMAND_LINE)
 	{
         if (instr[i]=='$')
 		{
 			//Convert the format to string
 			i++;
 			if (instr[i]=='$')
-				chrcat(regret,'$');
+			{
+				regret[o]='$';
+				o++;
+			}
 			if (instr[i]=='s')
-				chrcat(regret,32);
+			{
+				regret[o]=' ';
+				o++;
+			}
 			if (instr[i]=='C')
-				chrcat(regret,033);
+			{
+				regret[o]=33;
+				o++;
+			}
 			if (instr[i]=='d')
 			{
 				char buff[_MAX_PATH];
 			   /* Get the current working directory: */
 				_getcwd( buff, _MAX_PATH );
-				strcat(regret,buff);
+				int u=o+(int)strlen(buff);
+				if (u<COMMAND_LINE)
+				{
+					strcat(regret,buff);
+					o=u;
+				}
 			}
 			if (instr[i]=='x')
 			{
@@ -304,31 +430,45 @@ char *Cfns::convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon)
 				i=i+2;
 				int vl=charhextoint(muh);
 				if (vl>=0 && vl<256)
-                    chrcat(regret,(char)vl);
+				{
+					regret[o]=(char)vl;
+					o++;
+				}
 			}
 			if (instr[i]=='u')
 			{
 				//username...
-				strcat(regret,mx[xlogon].c_User);
+				int u=o+(int)strlen(mx[xlogon].c_User);
+				if (u<COMMAND_LINE)
+				{
+					strcat(regret,mx[xlogon].c_User);
+					o=u;
+				}
 			}
 			if (instr[i]=='n')
 			{
-				chrcat(regret,10);
-				chrcat(regret,13);
+				int u=o+2;
+				if (u<COMMAND_LINE)
+				{
+					regret[o]=10;
+					regret[o+1]=13;
+					o=o+2;
+				}
 			}
 		}
 		else
 		{
 			if (instr[i]!=10 && instr[i]!=13)
-				chrcat(regret,instr[i]);
+			{
+				regret[o]=instr[i];
+				o++;
+			}
 		}
 		i++;
 	}
-	strcpy(returned,regret);
+	strncpy(returned,regret,COMMAND_LINE);
 	return returned;
 }
-
-
 char *Cfns::depstring(char *dep)
 {
 	int mx=(int)strlen(dep);
@@ -343,12 +483,12 @@ char *Cfns::depstring(char *dep)
 
 BOOL Cfns::cmpfirstword(char *WordVariable,char *WordStatic)
 {
-    char meta[1024];
+    char meta[COMMAND_LINE];
 	BOOL rsp=FALSE;
 	int r=0;
-	int t=strlen(WordVariable);
-	memset(&meta,0,1024);
-	while(r<t && WordVariable[r]!=32 && r<512 && WordVariable[r]!=13 && WordVariable[r]!=10)
+	int t=(int)strlen(WordVariable);
+	memset(&meta,0,COMMAND_LINE);
+	while(r<t && WordVariable[r]!=32 && r<COMMAND_LINE && WordVariable[r]!=13 && WordVariable[r]!=10)
 	{
 		meta[r]=WordVariable[r];
         r++;
@@ -401,6 +541,7 @@ time_t Cfns::TimetFromFt(FILETIME pft)
 }
 char *Cfns::md5sum(char *value)
 {
-	strcpy(returned,CMD5Checksum::GetMD5((BYTE*)value,strlen(value)));
+	memset(&returned,0,COMMAND_LINE);
+	strncpy(returned,CMD5Checksum::GetMD5((BYTE*)value,(UINT)strlen(value)),32); //checksum Md5 is 32 bytes in hex.
 	return returned;
 }

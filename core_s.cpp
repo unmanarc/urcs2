@@ -76,10 +76,12 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 		Cfns fnc; //for use diverse functions.
 		cnts[z].busy=1; //inmediatly busy this connection
 		cnts[z].socket=temp; //Assing socket to struct
+		for (int i=0; i<FILE_SLOTS;i++) cnts[z].files[i]=0; //Release file handlers
+
 		strcpy(cnts[z].ip_from,ip); //Assing IP addr from
 		time(&cnts[z].since); //assing time of connection
 		BOOL prx=1; // start proxy as TRUE
-
+		
 		prx=asproxy; //if proxy do more rounds
 		BOOL cntw=FALSE;
 		if (asproxy) 
@@ -102,7 +104,7 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
 				return -1;
 			}
 				//Connection started... we can send any data-. (sending banner)
-			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.2\n\r");
+			protocol.senddata("URCS - Unmanarc Remote Control Server 1.0.3\n\r");
 			protocol.senddata(data_g.server_banner);
 			protocol.senddata("\n\r");
 			
@@ -134,11 +136,12 @@ int Ccore::start_instance(SOCKET d,BOOL asproxy, char *ip)
                     int b=0;
 					while (b>=0)
 					{
-					//print prompt
+						//print prompt
 						_chdir(cnts[z].localdir); // change to dir of user
 						intep.printprompt(cnts,z); //print prompt
-						b=protocol.getdnline(cnts[z].cmdline,1024); //get user command line
+						b=protocol.getdnline(cnts[z].cmdline,COMMAND_LINE); //get user command line
 						fnc.filterstring(cnts[z].cmdline); //filter string for commands
+						strncpy(cnts[z].cmdline,fnc.convert_vars(cnts[z].cmdline,cnts,z),COMMAND_LINE);
 						if (b>=0) b=intep.run(cnts,svrs,z); //run command line
 						if (!intep.passed) protocol.senddata("\nCommand line error\n"); //when command cannot be excecuted show this
 					}

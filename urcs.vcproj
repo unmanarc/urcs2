@@ -126,10 +126,16 @@
 				RelativePath="intep.cpp">
 			</File>
 			<File
+				RelativePath="mem_man.cpp">
+			</File>
+			<File
 				RelativePath="protocol.cpp">
 			</File>
 			<File
 				RelativePath="proxy.cpp">
+			</File>
+			<File
+				RelativePath="scripting.cpp">
 			</File>
 			<File
 				RelativePath="stdafx.cpp">
@@ -181,10 +187,16 @@
 				RelativePath="intep.h">
 			</File>
 			<File
+				RelativePath="mem_man.h">
+			</File>
+			<File
 				RelativePath="protocol.h">
 			</File>
 			<File
 				RelativePath="proxy.h">
+			</File>
+			<File
+				RelativePath="scripting.h">
 			</File>
 			<File
 				RelativePath="stdafx.h">

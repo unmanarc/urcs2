@@ -13,6 +13,7 @@ enjoy ;)
 #pragma once
 #endif // _MSC_VER > 1000
 
+
 #include "winsock2.h"
 
 class Cfns
@@ -21,6 +22,7 @@ public:
 	Cfns(); 
 	~Cfns();
 
+	long GetFreeDiskSpaceInKB(LPSTR pFile); //return free disk space in KB
 	int strpointer(char *pointer, char point); //Return a position of first matching char
 	int strrpointer(char *pointer, char point); //Return a position of first matching char (inverse)
 	int charhextointa(char dsi); //convert a one byte representing hex code, to int (0-F -> 0-16)
@@ -33,6 +35,7 @@ public:
 	void renter(char *crecpt);//ad /13 to /10 expresions
 	char *deparg(char *depu, char *arg, BOOL nax); //return the arguments and depure
 	char *convert(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon);//Transform $ lang.
+	char *convert_vars(char *instr, con_v mx[SERVER_CONNECTIONS], int xlogon);//Transform % lang.
 	char *depstring(char *dep);//convert all /32 to /0
 	char *md5sum(char *value); //calculate md5 sum of any string
 
@@ -42,5 +45,5 @@ public:
 	time_t TimetFromFt(FILETIME pft); //Convert a file-time to time_t
 
 protected:
-	char returned[4096];
+	char returned[COMMAND_LINE];
 };

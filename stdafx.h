@@ -16,10 +16,14 @@ enjoy ;)
 
 #pragma once
 
+#define VIRTUAL_DATA 256
 #define SERVER_SLOTS 128
 #define SERVER_CONNECTIONS 128
-#define MEMORY_FOR_USER 32770 
+#define FILE_SLOTS 256
+#define COMMAND_LINE 4092
+
 #define HASH_DEFAULT ""
+
 
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
@@ -32,8 +36,26 @@ enjoy ;)
 #include <tchar.h>
 
 #include "winsock2.h"
+#include "mem_man.h"
 
 // TODO: reference additional headers your program requires here
+typedef struct vcpu
+{
+	BOOL b_a;
+	BOOL b_b;
+	BOOL b_c;
+	BOOL b_d;
+	unsigned short s_a;
+	unsigned short s_b;
+	unsigned short s_c;
+	unsigned short s_d;
+	int i_a;
+	int i_b;
+	int i_c;
+	int i_d;
+	char data[VIRTUAL_DATA];
+}virtual_cpu;
+
 typedef struct conections
 {
 	BOOL busy; // this connection is busy?
@@ -45,16 +67,19 @@ typedef struct conections
 	// 1: User 
 	// 2: Chat user
 	// others: reserved for nexts uses...
-	char cmdline[1024];
+	char cmdline[COMMAND_LINE];
 	char localdir[_MAX_PATH];
 	char ip_from[256];
 	char from[255]; 
 	char c_User[512];
 	char c_Pass[512];
-	char mem[MEMORY_FOR_USER];
+	FILE *files[FILE_SLOTS];
+	Cmm m_mem;
+	virtual_cpu cpu;
 	
 	time_t since;
 	SOCKET socket;
+
 }con_v;
 
 typedef struct
@@ -67,4 +92,5 @@ typedef struct
 	SOCKET f;
 
 }ers_svr;
+
 

@@ -18,6 +18,7 @@ enjoy ;)
 #include "Server.h" // TCP Server Initialization
 #include "winsock2.h" // Winsock definitions.
 #include "proxy.h"
+
 /*
 Unmanarc implementation of client managment...
 Special thanks to: 
@@ -72,7 +73,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPTSTR    lpC
             AfxBeginThread(newinstance,(LPVOID)n); //Start Another thread for my client... and go to background.
 		}
 	}
-	else
-		return 50; //Cannot start server, bye with errorlevel 50
+	else Sleep(INFINITE); //If can't start server, Sleep Infinite for wait for outgoing proxy.
 	return 0;
 }
